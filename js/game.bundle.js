@@ -4629,9 +4629,14 @@
     const d = D();
     const L = currentLeague();
     const st = playerStats();
+    const pp = powerRating(st);
     const tutorial = isTutorialMatch();
     const enemy = nextEnemy();
     const boss = isBossMatch();
+    const adj = adjustEnemy(enemy);
+    const ep = powerRating(computeStats(enemy.build, (id) => adj.levels[id] || 1));
+    const rel = ep / Math.max(1, pp);
+    const relTxt = tutorial ? "Practice target" : rel > 1.15 ? '<span style="color:var(--hot)">Stronger than you</span>' : rel < 0.88 ? '<span style="color:var(--ok)">Weaker than you</span>' : "Evenly matched";
     const nodes = [];
     for (let i = 0; i < L.matches; i++) {
       const isBoss = L.pro ? i === 4 : i === L.matches - 1;
@@ -4639,47 +4644,62 @@
       const label = L.index === 0 && i === 0 ? "T" : isBoss ? "BOSS" : String(i + (L.index === 0 ? 0 : 1));
       nodes.push(`<div class="node ${cls} ${isBoss ? "boss" : ""}">${i < d.match ? "&#10003;" : label}</div>`);
     }
+    const all = [...LEAGUES, PRO];
+    const road = all.map((lg, i) => {
+      const cls = i < d.league ? "done" : i === Math.min(d.league, LEAGUES.length) ? "cur" : "locked";
+      return `<i class="${cls}" style="--lc:${lg.color}" title="${esc(lg.name)}"></i>`;
+    }).join("");
     const lv = pilotLevel();
     const curXp = 60 * (lv - 1) ** 2, nextXp = 60 * lv ** 2;
     const xpPct = Math.round((d.xp - curXp) / (nextXp - curXp) * 100);
-    const leagues = [...LEAGUES, PRO].map((lg, i) => {
-      const cls = i < d.league ? "done" : i === Math.min(d.league, LEAGUES.length) ? "cur" : "locked";
-      return `<div class="lg ${cls}"><span class="dot" style="background:${lg.color}"></span><b>${lg.name}</b><span class="spacer"></span><span class="muted small">${i < d.league ? "Cleared" : cls === "cur" ? "In progress" : "Locked"}</span></div>`;
-    }).join("");
+    const ups = Object.keys(d.inv).filter((id) => {
+      const u = upgradeInfo(id);
+      return u && u.can;
+    }).length;
+    const left = d.shop ? d.shop.cards.filter((c) => !c.sold).length : 5;
     const shopFresh = d.shop && d.shop.fresh;
+    const haz = hazardList(ARENAS[tutorial ? "tutorial" : L.arena]);
     const el = $("#scr-hub");
     el.innerHTML = `<div class="wrap">
-    ${topbar("Cursor Bots", "title")}
-    <div class="hub-grid">
-      <div class="panel league-card">
-        <div class="glowbar" style="background:${L.color};box-shadow:0 0 20px ${L.color}"></div>
-        <h2>Current series</h2>
-        <div class="lname" style="color:${L.color}">${L.name}</div>
-        <div class="muted small">Arena: ${ARENAS[L.arena].name}${L.pro ? " \xB7 endless" : ""}</div>
-        <div class="track">${nodes.join("")}</div>
-        <div class="small muted">${tutorial ? "Learn the controls against a training dummy." : boss ? `Boss fight: <b style="color:var(--gold)">${esc(enemy.name)}</b>` : `Next opponent: <b>${esc(enemy.name)}</b>`}</div>
-        <div class="leagues">${leagues}</div>
-      </div>
-      <div class="panel">
-        <h2>Your bot</h2>
-        <canvas class="botview" data-preview="player"></canvas>
-        <div class="statgrid">
-          <div class="stat"><b>${st.hp}</b><span>Health</span></div>
-          <div class="stat"><b>${powerRating(st)}</b><span>Power</span></div>
-          <div class="stat"><b>${Math.round(st.maxSpeed)}</b><span>Speed</span></div>
-          <div class="stat"><b>${Math.round(st.dps)}</b><span>Damage</span></div>
-          <div class="stat"><b style="color:${st.over > 0 ? "var(--hot)" : "inherit"}">${st.weight}/${st.cap}</b><span>Weight kg</span></div>
-          <div class="stat"><b>${d.stats.wins}-${d.stats.losses}</b><span>Record</span></div>
+    ${topbar("Hub", "title")}
+    <div class="hub2">
+      <section class="panel series" style="--lc:${L.color}">
+        <div class="glowbar"></div>
+        <div class="shead2">
+          <div><h2>${L.pro ? "Endless series" : `Series ${L.index + 1} of ${LEAGUES.length}`}</h2><div class="lname">${esc(L.name)}</div>
+            <div class="small muted">${esc(ARENAS[L.arena].name)}${haz.length ? " \xB7 " + esc(haz.join(", ")) : ""}</div></div>
         </div>
-        <div class="row small" style="margin-top:10px"><b>Pilot Lv ${lv}</b><span class="spacer"></span><span class="muted">${d.xp - curXp}/${nextXp - curXp} XP</span></div>
+        <div class="road">${road}</div>
+        <div class="track">${nodes.join("")}</div>
+        <div class="nextup ${boss ? "boss" : ""}">
+          <canvas data-preview="enemy" data-spin="0" data-mirror="1"></canvas>
+          <div class="nx">
+            <div class="tiny">${tutorial ? "Training" : boss ? "Boss fight" : "Next opponent"}</div>
+            <div class="ename" style="color:${boss ? "var(--gold)" : tutorial ? "var(--gold)" : "var(--hot)"}">${esc(enemy.name)}</div>
+            <div class="small muted">${tutorial ? "Learn the controls" : `Power ${ep} \xB7 ${relTxt}`}</div>
+          </div>
+        </div>
+        <button class="btn ${boss ? "gold" : "primary"} big block" data-act="fight">${tutorial ? "Start Tutorial" : boss ? "Boss Fight" : "Series Fight"}</button>
+      </section>
+      <section class="panel mybot">
+        <div class="row"><h2>Your bot</h2><span class="spacer"></span><span class="pill sm">Power ${pp}</span></div>
+        <div class="mybot-body">
+          <canvas class="botview" data-preview="player"></canvas>
+          <div class="statgrid two">
+            <div class="stat"><b>${st.hp}</b><span>Health</span></div>
+            <div class="stat"><b>${Math.round(st.dps)}</b><span>Damage</span></div>
+            <div class="stat"><b>${Math.round(st.maxSpeed)}</b><span>Speed</span></div>
+            <div class="stat"><b style="color:${st.over > 0 ? "var(--hot)" : "inherit"}">${st.weight}<small>/${st.cap}</small></b><span>Weight kg</span></div>
+          </div>
+        </div>
+        <div class="row small" style="margin-top:10px"><b>Pilot Lv ${lv}</b><span class="spacer"></span><span class="muted">${d.stats.wins}W ${d.stats.losses}L \xB7 ${d.xp - curXp}/${nextXp - curXp} XP</span></div>
         <div class="xpbar"><i style="width:${xpPct}%"></i></div>
+        <button class="btn block" style="margin-top:12px" data-act="garage" ${tutorial ? "disabled" : ""}>Garage${ups ? `<span class="badge ok">${ups} UP</span>` : ""}</button>
+      </section>
+      <div class="quick">
+        <button class="qcard" data-act="brawl" ${tutorial ? "disabled" : ""} style="--qc:#ff4d7a"><span class="mi">${ICON.brawl}</span><span class="mt"><b>Quick Brawl</b><small>${tutorial ? "After training" : d.brawl.streak > 1 ? `Streak x${d.brawl.streak}` : "Fight for credits"}</small></span></button>
+        <button class="qcard" data-act="shop" ${tutorial ? "disabled" : ""} style="--qc:#ffd23f"><span class="mi">${ICON.shop}</span><span class="mt"><b>Workshop</b><small>${tutorial ? "After training" : left ? `${left} card${left > 1 ? "s" : ""} for sale` : "Sold out \xB7 reroll"}</small></span>${shopFresh ? '<span class="badge">NEW</span>' : ""}</button>
       </div>
-    </div>
-    <div class="hub-actions three">
-      <button class="btn ${boss ? "gold" : "primary"} big fight" data-act="fight">${tutorial ? "Start Tutorial" : boss ? "Boss Fight" : "Series Fight"}</button>
-      <button class="btn" data-act="brawl" ${tutorial ? "disabled" : ""}>Brawl${d.brawl.streak > 1 ? `<span class="badge">x${d.brawl.streak}</span>` : ""}</button>
-      <button class="btn" data-act="garage" ${tutorial ? "disabled" : ""}>Garage</button>
-      <button class="btn" data-act="shop" ${tutorial ? "disabled" : ""}>Workshop${shopFresh ? '<span class="badge">NEW</span>' : ""}</button>
     </div>
   </div>`;
     bind(el, {
@@ -4693,26 +4713,39 @@
     show("hub");
     registerPreviews(el);
   }
+  function pips(lvl2) {
+    let h = '<span class="pips">';
+    for (let i = 1; i <= MAX_LEVEL; i++) h += `<i class="${i <= lvl2 ? "on" : ""}"></i>`;
+    return h + "</span>";
+  }
   function statBars(st) {
-    const bar = (lbl, v, max, txt, warn) => `<div class="sbar"><span class="lbl">${lbl}</span><span class="track2"><i class="${warn ? "warn" : ""}" style="width:${Math.max(3, Math.min(100, v / max * 100))}%"></i></span><span class="val">${txt}</span></div>`;
+    const bar = (lbl, v, max, txt) => `<div class="sbar"><span class="lbl">${lbl}</span><span class="track2"><i style="width:${Math.max(3, Math.min(100, v / max * 100))}%"></i></span><span class="val">${txt}</span></div>`;
     return `<div class="bars">
-    ${bar("Health", st.hp, 520, st.hp)}
+    ${bar("Health", st.hp, 900, st.hp)}
     ${bar("Armor", st.dr, 0.55, Math.round(st.dr * 100) + "%")}
-    ${bar("Shield", st.shieldCap, 130, Math.round(st.shieldCap))}
-    ${bar("Damage", st.dps, 110, Math.round(st.dps))}
-    ${bar("Speed", st.maxSpeed, 380, Math.round(st.maxSpeed))}
-    ${bar("Handling", st.turn, 7, st.turn.toFixed(1))}
-    ${bar("Weight", st.weight, st.cap, `${st.weight}/${st.cap}`, st.over > 0)}
+    ${bar("Shield", st.shieldCap, 260, Math.round(st.shieldCap))}
+    ${bar("Damage", st.dps, 220, Math.round(st.dps))}
+    ${bar("Speed", st.maxSpeed, 420, Math.round(st.maxSpeed))}
+    ${bar("Handling", st.turn, 8, st.turn.toFixed(1))}
+  </div>`;
+  }
+  function weightMeter(st) {
+    const pct = Math.min(130, st.weight / st.cap * 100);
+    return `<div class="wmeter ${st.over > 0 ? "over" : pct > 90 ? "near" : ""}">
+    <div class="row small"><b>Weight</b><span class="spacer"></span><span><b>${st.weight}</b> / ${st.cap} kg</span></div>
+    <div class="wbar"><i style="width:${Math.min(100, pct)}%"></i>${st.over > 0 ? "" : ""}</div>
+    <div class="tiny muted">${st.over > 0 ? `Overweight by ${(st.weight - st.cap).toFixed(1)} kg: slower and less nimble` : `${(st.cap - st.weight).toFixed(1)} kg spare capacity`}</div>
   </div>`;
   }
   function slotRow(cat, slot, id, label) {
-    if (!id) return `<div class="slot empty" data-act="pick" data-arg="${cat}:${slot}"><canvas></canvas><div><div class="nm">Empty ${label}</div><div class="sub">Tap to equip</div></div></div>`;
+    if (!id) return `<div class="slot empty" data-act="pick" data-arg="${cat}:${slot}"><span class="plus">+</span><div><div class="nm">Empty ${label}</div><div class="sub">Tap to equip</div></div></div>`;
     const p = PART[id];
     const u = upgradeInfo(id);
+    const l = lvl(id);
     return `<div class="slot r-${p.rarity}" data-act="pick" data-arg="${cat}:${slot}">
     <canvas data-icon="${id}"></canvas>
-    <div><div class="nm">${esc(p.name)}</div><div class="sub"><span class="rtag">${RARITY[p.rarity].name}</span> \xB7 ${esc(partStats(p, lvl(id))[0])}</div></div>
-    <span class="lv">Lv ${lvl(id)}</span>${u && u.can ? '<span class="up">UP</span>' : ""}
+    <div class="si"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(partStats(p, l)[0])}</div>${pips(l)}</div>
+    <span class="lv">Lv ${l}</span>${u && u.can ? '<span class="up">UP</span>' : ""}
   </div>`;
   }
   function renderGarage() {
@@ -4721,29 +4754,31 @@
     const F = PART[b.frame];
     const st = playerStats();
     const W = PART[b.wheel];
+    const n = (arr) => arr.filter(Boolean).length;
+    const group = (title, count, rows, wide) => `<div class="slotgroup ${wide ? "wide" : ""}"><h3>${title}${count ? `<span>${count}</span>` : ""}</h3><div class="slotgrid">${rows}</div></div>`;
     const groups = [];
-    groups.push(`<div class="slotgroup"><h3>Frame</h3>${slotRow("frame", 0, b.frame, "frame")}</div>`);
-    groups.push(`<div class="slotgroup"><h3>Wheels &times; ${F.slots.wheel}</h3>${slotRow("wheel", 0, b.wheel, "wheels")}</div>`);
-    groups.push(`<div class="slotgroup"><h3>Weapons (${F.slots.weapon})</h3>${b.weapons.map((id, i) => slotRow("weapon", i, id, i === 0 ? "front weapon" : "side weapon")).join("")}</div>`);
-    groups.push(`<div class="slotgroup"><h3>Armor (${F.slots.armor})</h3>${b.armor.map((id, i) => slotRow("armor", i, id, "armor")).join("")}</div>`);
-    if (F.slots.shield) groups.push(`<div class="slotgroup"><h3>Shield</h3>${slotRow("shield", 0, b.shield, "shield")}</div>`);
-    if (F.slots.util) groups.push(`<div class="slotgroup"><h3>Utility (${F.slots.util})</h3>${b.util.map((id, i) => slotRow("util", i, id, "utility")).join("")}</div>`);
+    groups.push(group("Frame", "", slotRow("frame", 0, b.frame, "frame")));
+    groups.push(group("Wheels", `x${F.slots.wheel}`, slotRow("wheel", 0, b.wheel, "wheels")));
+    groups.push(group("Weapons", `${n(b.weapons)}/${F.slots.weapon}`, b.weapons.map((id, i) => slotRow("weapon", i, id, i === 0 ? "front weapon" : "side weapon")).join(""), true));
+    groups.push(group("Armor", `${n(b.armor)}/${F.slots.armor}`, b.armor.map((id, i) => slotRow("armor", i, id, "armor")).join(""), true));
+    if (F.slots.shield) groups.push(group("Shield", "", slotRow("shield", 0, b.shield, "shield")));
+    if (F.slots.util) groups.push(group("Utility", `${n(b.util)}/${F.slots.util}`, b.util.map((id, i) => slotRow("util", i, id, "utility")).join(""), true));
     const warns = [];
-    if (st.over > 0) warns.push(`Overweight by ${(st.weight - st.cap).toFixed(1)}kg: speed and handling reduced.`);
     if (!b.weapons.some(Boolean)) warns.push("No weapon equipped! You can only ram.");
     const el = $("#scr-garage");
     el.innerHTML = `<div class="wrap">
     ${topbar("Garage", "back")}
-    <div class="garage-grid">
-      <div class="panel preview">
+    <div class="garage2">
+      <section class="panel gpreview">
+        <div class="gtop"><div><div class="gname">${esc(F.name)}</div><div class="small muted">${esc(W.name)} \xB7 <span class="rtag r-${F.rarity}">${RARITY[F.rarity].name} frame</span></div></div><span class="spacer"></span><div class="power"><b>${powerRating(st)}</b><span>Power</span></div></div>
         <canvas data-preview="player"></canvas>
-        <div class="row small"><b>${esc(F.name)}</b><span class="muted">${esc(W.name)}</span><span class="spacer"></span><span class="pill" style="font-size:12px">Power ${powerRating(st)}</span></div>
+        ${weightMeter(st)}
         ${statBars(st)}
         ${warns.map((w) => `<div class="warnbox">${w}</div>`).join("")}
-      </div>
-      <div class="panel slots" id="slotlist">${groups.join("")}</div>
+      </section>
+      <section class="gslots" id="slotlist">${groups.join("")}</section>
     </div>
-    <div class="hub-actions"><button class="btn primary" data-act="fight">Ready</button><button class="btn" data-act="shop">Workshop</button></div>
+    <div class="hub-actions"><button class="btn primary" data-act="fight">Done</button><button class="btn" data-act="shop">Workshop</button></div>
   </div>`;
     bind(el, {
       back: () => renderHub(),
@@ -4764,39 +4799,68 @@
       setTimeout(() => coach("<b>Garage:</b> tap any slot to swap parts. Bigger frames carry more wheels, weapons and armor, and every part changes how your bot looks. Watch your <b>weight</b> against the frame's capacity!", "#slotlist"), 350);
     }
   }
-  function openPicker(cat, slot) {
+  function previewEquip(cat, slot, id) {
+    const nb = JSON.parse(JSON.stringify(D().build));
+    if (cat === "frame") {
+      nb.frame = id;
+      fitBuild(nb);
+    } else if (cat === "wheel") nb.wheel = id;
+    else if (cat === "shield") nb.shield = id;
+    else {
+      const key = cat === "weapon" ? "weapons" : cat;
+      const arr = nb[key];
+      const o = arr.indexOf(id);
+      if (id && o >= 0 && o !== slot) arr[o] = arr[slot];
+      arr[slot] = id;
+    }
+    return computeStats(nb, lvl);
+  }
+  function openPicker(cat, slot, keepScroll) {
     const d = D();
     const b = d.build;
     const ownedIds = Object.keys(d.inv).filter((id) => PART[id].cat === cat);
     const rOrder = { common: 0, rare: 1, epic: 2, legendary: 3 };
-    ownedIds.sort((a, c) => rOrder[PART[c].rarity] - rOrder[PART[a].rarity] || PART[a].name.localeCompare(PART[c].name));
     const current = cat === "frame" ? b.frame : cat === "wheel" ? b.wheel : cat === "shield" ? b.shield : (cat === "weapon" ? b.weapons : b[cat])[slot];
+    ownedIds.sort((a, c) => (c === current) - (a === current) || rOrder[PART[c].rarity] - rOrder[PART[a].rarity] || lvl(c) - lvl(a) || PART[a].name.localeCompare(PART[c].name));
     const canEmpty = !["frame", "wheel"].includes(cat);
+    const base = playerStats();
+    const basePow = powerRating(base);
     const items = ownedIds.map((id) => {
       const p = PART[id];
       const u = upgradeInfo(id);
       const on = id === current;
       const elsewhere = !on && ["weapon", "armor", "util"].includes(cat) && (cat === "weapon" ? b.weapons : b[cat]).includes(id);
-      const prog = u.max ? '<span class="small" style="color:var(--gold)">MAX</span>' : `<div class="prog" title="copies"><i style="width:${Math.min(100, u.copies / u.need * 100)}%"></i></div><span class="small muted">${u.copies}/${u.need} copies</span>`;
+      let delta = "";
+      if (!on) {
+        const ns = previewEquip(cat, slot, id);
+        const dp = powerRating(ns) - basePow, dw = Math.round((ns.weight - base.weight) * 10) / 10;
+        delta = `<div class="deltas"><span class="dc ${dp > 0 ? "good" : dp < 0 ? "bad" : ""}">${dp > 0 ? "+" : ""}${dp} power</span><span class="dc ${ns.over > 0 && dw > 0 ? "bad" : ""}">${dw > 0 ? "+" : ""}${dw} kg</span>${ns.over > 0 && base.over <= 0 ? '<span class="dc bad">overweight</span>' : ""}</div>`;
+      }
+      const upTxt = u.max ? '<span class="maxed">MAX LEVEL</span>' : `<button class="btn small ${u.can ? "gold" : "ghost"} upbtn" data-act="up" data-arg="${id}" ${u.can ? "" : "disabled"}><span>Upgrade to Lv ${u.lvl + 1}</span><small>${u.copies}/${u.need} copies \xB7 ${coin}${u.cost}</small></button>`;
       return `<div class="pick r-${p.rarity} ${on ? "on" : ""}">
       <canvas data-icon="${id}"></canvas>
-      <div><div class="nm">${esc(p.name)} <span class="small muted">Lv ${u.lvl}</span></div>
-        <div class="rtag">${RARITY[p.rarity].name} \xB7 ${p.wt}kg</div>
-        <div class="st">${partStats(p, u.lvl).map(esc).join("<br>")}</div>
-        <div class="st muted">${esc(p.desc)}</div></div>
-      <div class="acts">
-        ${on ? '<span class="small" style="color:var(--accent);font-weight:800">EQUIPPED</span>' : `<button class="btn small primary" data-act="equip" data-arg="${id}">${elsewhere ? "Move here" : "Equip"}</button>`}
-        ${prog}
-        ${u.max ? "" : `<button class="btn small ${u.can ? "gold" : ""}" data-act="up" data-arg="${id}" ${u.can ? "" : "disabled"}>Lv ${u.lvl + 1} \xB7 ${u.cost}</button>`}
+      <div class="pinfo">
+        <div class="nm">${esc(p.name)}</div>
+        <div class="meta"><span class="rtag">${RARITY[p.rarity].name}</span><span>Lv ${u.lvl}</span><span>${p.wt} kg</span></div>
+        ${pips(u.lvl)}
+        <div class="st">${partStats(p, u.lvl).map(esc).join(" \xB7 ")}</div>
+        <div class="st muted">${esc(p.desc)}</div>
+        ${delta}
+      </div>
+      <div class="pacts">
+        ${on ? '<span class="eq">Equipped</span>' : `<button class="btn small primary" data-act="equip" data-arg="${id}">${elsewhere ? "Move here" : "Equip"}</button>`}
+        ${upTxt}
       </div></div>`;
     }).join("");
-    sheet(`<div class="row" style="margin-bottom:10px"><h2>${CATS[cat]}${cat === "wheel" ? " (fills every wheel slot)" : ""}</h2><span class="spacer"></span><div class="pill">${coin}<span data-credits>${d.credits}</span></div><button class="icon-btn" data-act="close">&times;</button></div>
-    ${canEmpty && current ? `<button class="btn small block ghost" style="margin-bottom:8px" data-act="empty">Unequip</button>` : ""}
+    const prevScroll = keepScroll ? ($("#sheet .inner") || {}).scrollTop : 0;
+    sheet(`<div class="sheethead"><div><h2>${CATS[cat]}</h2><div class="tiny muted">${cat === "wheel" ? "Fills every wheel slot" : cat === "frame" ? "Sets slots, health and weight capacity" : "Tap Equip to swap"} \xB7 ${ownedIds.length} owned</div></div><span class="spacer"></span><div class="pill">${coin}<span data-credits>${d.credits}</span></div><button class="icon-btn" data-act="close" aria-label="Close">&times;</button></div>
+    ${canEmpty && current ? `<button class="btn small block ghost" style="margin-bottom:8px" data-act="empty">Unequip this slot</button>` : ""}
     ${items || `<p class="muted">You don't own any parts of this type yet. Buy them in the Workshop.</p>`}
-    <p class="small muted">Buy duplicate cards in the Workshop to collect copies and level parts up (+12% stats per level, max Lv ${MAX_LEVEL}). Higher levels need more copies and credits.</p>`, (s) => bind(s, {
+    <p class="tiny muted">Buy duplicate cards in the Workshop to collect copies. Each level adds +12% stats, up to Lv ${MAX_LEVEL}; higher levels need more copies and credits.</p>`, (s) => bind(s, {
       close: closeSheet,
       equip: (id) => {
         equip(cat, slot, id);
+        play("upgrade");
         closeSheet();
         renderGarage();
       },
@@ -4808,55 +4872,90 @@
       up: (id) => {
         if (upgrade(id)) {
           play("upgrade");
+          vibrateIf(30);
           toast(`${PART[id].name} upgraded to Lv ${lvl(id)}!`);
-          openPicker(cat, slot);
-          renderGarageKeepSheet();
+          renderGarage();
+          openPicker(cat, slot, true);
         } else play("error");
       }
     }));
-  }
-  function renderGarageKeepSheet() {
-    const s = $("#sheet").innerHTML;
-    const hidden = $("#sheet").classList.contains("hidden");
-    renderGarage();
-    if (!hidden) {
-      $("#sheet").innerHTML = s;
-      $("#sheet").classList.remove("hidden");
-    }
+    if (prevScroll) $("#sheet .inner").scrollTop = prevScroll;
   }
   function cardHtml(c, i) {
     const p = PART[c.id];
     const d = D();
     const own = d.inv[c.id];
     const price = priceOf(c.id);
-    let ownTxt = '<div class="own new">NEW PART</div>';
+    let ownTxt = '<div class="own new">&#9733; New part</div>';
     if (own) {
       const u = upgradeInfo(c.id);
-      ownTxt = u.max ? '<div class="own">OWNED \xB7 MAX LEVEL</div>' : `<div class="own">OWNED Lv ${own.lvl} \xB7 copy ${own.copies}/${u.need}</div><div class="prog"><i style="width:${Math.min(100, own.copies / u.need * 100)}%"></i></div>`;
+      ownTxt = u.max ? '<div class="own">Owned \xB7 max level</div>' : `<div class="own">${own.copies + 1 >= u.need && !c.sold ? "&#9650; Unlocks Lv " + (own.lvl + 1) : `Owned Lv ${own.lvl}`}<span class="spacer"></span>${own.copies}/${u.need}</div><div class="prog"><i style="width:${Math.min(100, own.copies / u.need * 100)}%"></i></div>`;
     }
     return `<div class="card r-${p.rarity} ${c.sold ? "sold" : ""} ${p.rarity === "legendary" ? "legendary-glow" : ""}" style="animation-delay:${i * 0.08}s">
-    <span class="rtag">${RARITY[p.rarity].name}</span>
+    <div class="ctop"><span class="rtag">${RARITY[p.rarity].name}</span><span class="spacer"></span><span class="cat">${CATS[p.cat]}</span></div>
     <canvas data-icon="${c.id}"></canvas>
-    <div class="cat">${CATS[p.cat]}</div>
     <div class="nm">${esc(p.name)}</div>
     <div class="st">${partStats(p).map(esc).join("<br>")}</div>
     ${ownTxt}
     <button class="btn small ${c.sold ? "" : d.credits >= price ? "primary" : ""}" data-act="buy" data-arg="${i}" ${!c.sold && d.credits < price ? "disabled" : ""}>${c.sold ? "Purchased" : `${coin} ${price}`}</button>
+    ${c.sold ? '<div class="stamp">Sold</div>' : ""}
   </div>`;
+  }
+  var COLL_CATS = ["all", "frame", "wheel", "weapon", "armor", "shield", "util"];
+  function collectionHtml() {
+    const d = D();
+    const f = UI.collFilter || "all";
+    const rOrder = { common: 0, rare: 1, epic: 2, legendary: 3 };
+    const list = PARTS.filter((p) => f === "all" || p.cat === f).slice().sort((a, b) => COLL_CATS.indexOf(a.cat) - COLL_CATS.indexOf(b.cat) || rOrder[a.rarity] - rOrder[b.rarity]);
+    const ownedN = (c) => PARTS.filter((p) => (c === "all" || p.cat === c) && d.inv[p.id]).length;
+    const totalN = (c) => PARTS.filter((p) => c === "all" || p.cat === c).length;
+    const chips = COLL_CATS.map((c) => `<button class="fchip ${c === f ? "on" : ""}" data-act="filter" data-arg="${c}">${c === "all" ? "All" : CATS[c]} <small>${ownedN(c)}/${totalN(c)}</small></button>`).join("");
+    const tiles = list.map((p) => {
+      const own = d.inv[p.id];
+      return `<div class="ctile r-${p.rarity} ${own ? "" : "locked"}" data-act="part" data-arg="${p.id}">
+      <canvas data-icon="${p.id}"></canvas>
+      <div class="nm">${esc(p.name)}</div>
+      ${own ? `<div class="tiny">Lv ${own.lvl}${own.copies ? ` \xB7 +${own.copies}` : ""}</div>` : `<div class="tiny muted">${RARITY[p.rarity].name}</div>`}
+    </div>`;
+    }).join("");
+    const pct = Math.round(ownedN("all") / PARTS.length * 100);
+    return `<div class="collhead"><div class="row small"><b>Collection</b><span class="spacer"></span><span class="muted">${ownedN("all")} of ${PARTS.length} parts \xB7 ${pct}%</span></div><div class="xpbar"><i style="width:${pct}%"></i></div></div>
+    <div class="fchips">${chips}</div><div class="ctiles">${tiles}</div>`;
+  }
+  function openPartInfo(id) {
+    const p = PART[id];
+    const own = D().inv[id];
+    const u = own ? upgradeInfo(id) : null;
+    modal(`<div class="partinfo r-${p.rarity}">
+    <canvas data-icon="${id}"></canvas>
+    <div class="rtag">${RARITY[p.rarity].name} ${CATS[p.cat]}</div>
+    <h3>${esc(p.name)}</h3>
+    <p>${esc(p.desc)}</p>
+    <div class="st">${partStats(p, own ? own.lvl : 1).map(esc).join("<br>")}<br>${p.wt} kg</div>
+    ${own ? `<div class="own-line">Owned \xB7 Lv ${own.lvl}${u.max ? " (max)" : ` \xB7 ${own.copies}/${u.need} copies to Lv ${own.lvl + 1}`}</div>${pips(own.lvl)}` : `<div class="own-line muted">Not owned yet. Look for it in the Workshop deal or win it in Quick Brawl.</div>`}
+  </div><div class="acts">${own ? '<button class="btn primary" data-act="garage">Open Garage</button>' : ""}<button class="btn" data-act="x">Close</button></div>`, (m) => bind(m, { x: closeModal, garage: () => {
+      closeModal();
+      renderGarage();
+    } }));
   }
   function renderShop(animate = true) {
     const d = D();
     if (!d.shop) dealShop();
+    const tab = UI.shopTab || "deal";
     const el = $("#scr-shop");
     const rc = rerollCost();
+    const left = d.shop.cards.filter((c) => !c.sold).length;
+    const owned = Object.keys(d.inv).length;
     el.innerHTML = `<div class="wrap">
     ${topbar("Workshop", "back")}
-    <div class="row wrap-row" style="margin-bottom:12px"><div><h2>Dealt for you</h2><div class="small muted">A fresh hand of part cards is dealt after every match.</div></div>
+    <div class="tabs"><button class="tab ${tab === "deal" ? "on" : ""}" data-act="tab" data-arg="deal">Today's deal${left ? ` <small>${left}</small>` : ""}</button><button class="tab ${tab === "coll" ? "on" : ""}" data-act="tab" data-arg="coll">Collection <small>${owned}/${PARTS.length}</small></button></div>
+    ${tab === "deal" ? `
+    <div class="dealhead"><div><b>A fresh hand after every fight</b><div class="tiny muted">Rarer cards show up in higher leagues. Duplicates level your parts up.</div></div>
       <span class="spacer"></span><button class="btn small" data-act="reroll" ${d.credits < rc ? "disabled" : ""}>Reroll &middot; ${coin} ${rc}</button></div>
-    <div class="cards" id="cards">${d.shop.cards.map(cardHtml).join("")}</div>
+    <div class="cards" id="cards">${d.shop.cards.map(cardHtml).join("")}</div>` : `<div id="coll">${collectionHtml()}</div>`}
     <div class="hub-actions"><button class="btn primary" data-act="garage">Garage</button><button class="btn" data-act="back">Done</button></div>
   </div>`;
-    if (!animate) $$(".card", el).forEach((c) => c.style.animation = "none");
+    if (!animate || tab !== "deal") $$(".card", el).forEach((c) => c.style.animation = "none");
     bind(el, {
       back: () => {
         d.shop.fresh = false;
@@ -4869,6 +4968,17 @@
         save();
         renderGarage();
       },
+      tab: (t) => {
+        UI.shopTab = t;
+        renderShop(false);
+      },
+      filter: (c) => {
+        UI.collFilter = c;
+        const y = el.scrollTop;
+        renderShop(false);
+        el.scrollTop = y;
+      },
+      part: (id) => openPartInfo(id),
       reroll: () => {
         if (reroll()) {
           play("deal");
@@ -4884,16 +4994,20 @@
         }
         play("buy");
         vibrateIf(20);
-        toast(res.dup ? `+1 copy of ${PART[id].name}. Level it up in the Garage!` : `${PART[id].name} added to your Garage!`);
+        const u = upgradeInfo(id);
+        toast(res.dup ? u.can ? `+1 ${PART[id].name}: ready to upgrade in the Garage!` : `+1 copy of ${PART[id].name}` : `${PART[id].name} added to your Garage!`);
+        const y = el.scrollTop;
         renderShop(false);
+        el.scrollTop = y;
       }
     });
     show("shop");
     drawIcons(el);
-    if (animate) d.shop.cards.forEach((_, i) => setTimeout(() => play("deal"), i * 80));
+    if (animate && tab === "deal") d.shop.cards.forEach((_, i) => setTimeout(() => play("deal"), i * 80));
     if (!d.tut.shop) {
       d.tut.shop = true;
       save();
+      UI.shopTab = "deal";
       setTimeout(() => coach("<b>The Workshop:</b> after every match you're dealt 5 part cards from the deck. Rarer cards appear in higher leagues. Try the <b>Brick</b> frame (4 wheels + a utility slot) and the <b>Hammer</b>, then equip them in the Garage.", "#cards"), 700);
     }
   }
