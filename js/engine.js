@@ -215,8 +215,13 @@ export class Match {
     this.events = o.onEvent || (() => {});
     this.time = 0; this.state = 'countdown'; this.countdown = o.tutorial ? 0.6 : 3.2; this.lastCount = 4;
     this.duration = o.tutorial ? Infinity : (o.duration || 120);
-    this.player = new Bot(o.player.build, o.player.levels, 'player', 250, 500, 0, 'YOU');
-    this.enemy = new Bot(o.enemy.build, o.enemy.levels, o.enemy.team || 'enemy', 1150, 500, Math.PI, o.enemy.name);
+    // Portrait screens see the arena tall and narrow, so fighters start top/bottom there.
+    const vert = !!o.portrait && !o.tutorial;
+    this.player = vert ? new Bot(o.player.build, o.player.levels, 'player', 700, 700, -Math.PI / 2, 'YOU')
+      : new Bot(o.player.build, o.player.levels, 'player', 250, 500, 0, 'YOU');
+    this.enemy = vert ? new Bot(o.enemy.build, o.enemy.levels, o.enemy.team || 'enemy', 700, 300, Math.PI / 2, o.enemy.name)
+      : new Bot(o.enemy.build, o.enemy.levels, o.enemy.team || 'enemy', 1150, 500, Math.PI, o.enemy.name);
+    this.vw = 0; this.vh = 0;
     if (!o.enemy.dummy) this.enemy.ai = new AI(o.enemy.diff ?? 0.3);
     if (o.player.ai) this.player.ai = new AI(o.player.ai);
     this.bots = [this.player, this.enemy];
@@ -808,7 +813,15 @@ export class Match {
   updateCamera(dt, snap = false) {
     const p = this.player, e = this.enemy;
     let tx = p.x, ty = p.y;
-    if (e.alive && !e.hidden) { tx += (e.x - p.x) * 0.35; ty += (e.y - p.y) * 0.35; }
+    if (e.alive && !e.hidden) {
+      // lean toward the enemy, but never so far that your own bot leaves the screen
+      let ox = (e.x - p.x) * 0.35, oy = (e.y - p.y) * 0.35;
+      if (this.vw) {
+        const mx = Math.max(0, this.vw / 2 - p.r * 3 - 30), my = Math.max(0, this.vh / 2 - p.r * 3 - 60);
+        ox = clamp(ox, -mx, mx); oy = clamp(oy, -my, my);
+      }
+      tx += ox; ty += oy;
+    }
     const k = snap ? 1 : 1 - Math.exp(-5 * dt);
     this.cam.x += (tx - this.cam.x) * k; this.cam.y += (ty - this.cam.y) * k;
     this.cam.shake = Math.max(0, this.cam.shake - dt * 30);
@@ -824,6 +837,7 @@ export class Match {
   draw(ctx, w, h) {
     const z = this.zoomFor(w, h);
     const hw = w / 2 / z, hh = h / 2 / z;
+    this.vw = hw * 2; this.vh = hh * 2;
     let cx = this.cam.x, cy = this.cam.y;
     cx = hw * 2 >= WORLD.w + 80 ? WORLD.w / 2 : clamp(cx, hw - 40, WORLD.w - hw + 40);
     cy = hh * 2 >= WORLD.h + 80 ? WORLD.h / 2 : clamp(cy, hh - 40, WORLD.h - hh + 40);

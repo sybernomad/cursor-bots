@@ -156,7 +156,7 @@ function startAttract() {
     const mine = d.tut.match ? { build: JSON.parse(JSON.stringify(d.build)), levels: SV.levelsMap() } : (() => { const b = SV.genBot(r, p, { rarity: L.rarity }); return { build: b.build, levels: b.levels }; })();
     if (!mine.build.weapons.some(Boolean)) { const b = SV.genBot(r, p, { rarity: L.rarity }); mine.build = b.build; mine.levels = b.levels; }
     const m = new Match({
-      arena, duration: 50, shake: 0.2,
+      arena, duration: 50, shake: 0.2, portrait: window.innerHeight > window.innerWidth,
       player: { ...mine, ai: 0.72 },
       enemy: { build: foe.build, levels: foe.levels, diff: 0.68, name: foe.name, team: foe.team },
       onEvent: () => {},
@@ -635,7 +635,7 @@ function startMatch() {
   const adj = SV.adjustEnemy(e);
   UI.input = { x: 0, y: 0, mag: 0, fire: [false, false, false], boost: false };
   const m = new Match({
-    arena, tutorial: !!e.tutorial,
+    arena, tutorial: !!e.tutorial, portrait: window.innerHeight > window.innerWidth,
     player: { build: JSON.parse(JSON.stringify(d.build)), levels: SV.levelsMap() },
     enemy: { build: e.build, levels: adj.levels, diff: adj.diff, name: e.name, dummy: e.dummy, team: e.team },
     onEvent: onMatchEvent, shake: d.settings.shake === false ? 0 : 1,
