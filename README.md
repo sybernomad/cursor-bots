@@ -9,10 +9,20 @@ no dependencies.
 
 ## Play locally
 
-Any static server works (service workers need `http://localhost` or HTTPS, not `file://`):
+Double-click `index.html` to play straight from disk. Install/offline/auto-update only work when
+served over `http://localhost` or HTTPS, so to test those use a local server:
 
 ```bash
 npx serve .            # or: python3 -m http.server 8080
+```
+
+## Editing the code
+
+The source lives in `js/*.js` (ES modules). The page loads the bundled `js/game.bundle.js`, so after
+editing any source file run:
+
+```bash
+node tools/build.mjs
 ```
 
 Controls: drag the left half of the screen to drive (the bot turns toward your thumb,
@@ -30,7 +40,7 @@ Space/J, K, L for weapons, Shift to boost, Esc to pause.
 ## Shipping updates (auto-update)
 
 1. Make your changes.
-2. Run `node tools/bump-version.mjs` (or edit `VERSION` in `sw.js`). **The version must change**
+2. Run `node tools/build.mjs`, then `node tools/bump-version.mjs` (or edit `VERSION` in `sw.js`). **The version must change**
    or installed apps won't notice the update.
 3. If you added new files, add them to the `ASSETS` list in `sw.js`.
 4. Push. Installed copies check for updates on launch, when brought to the foreground, and every

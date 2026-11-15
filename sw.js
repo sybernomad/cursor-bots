@@ -2,20 +2,14 @@
  * To ship an update: change VERSION below (or run `node tools/bump-version.mjs`) and push.
  * Installed apps detect the changed worker, download the new files in the background,
  * and the page activates them automatically on the next menu screen. */
-const VERSION = '1.0.0';
+const VERSION = '1.0.2';
 const CACHE = `cursorbots-${VERSION}`;
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/style.css',
-  './js/main.js',
-  './js/ui.js',
-  './js/engine.js',
-  './js/render.js',
-  './js/data.js',
-  './js/save.js',
-  './js/audio.js',
+  './js/game.bundle.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',

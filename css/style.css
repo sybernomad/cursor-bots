@@ -204,7 +204,7 @@ h2 { font-size: 15px; color: var(--muted); font-weight: 700; letter-spacing: .14
 .stick.on, .stick.idle { opacity: 1; }
 .stick.idle { opacity: .45; }
 .stick .knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #bffaff, #3ff0ff 60%, #1a8fb0); box-shadow: 0 0 20px rgba(63,240,255,.5); }
-.abtns { position: absolute; right: calc(14px + var(--safe-r)); bottom: calc(16px + var(--safe-b)); display: flex; gap: 12px; align-items: flex-end; pointer-events: auto; flex-wrap: wrap-reverse; justify-content: flex-end; max-width: 55%; }
+.abtns { position: absolute; right: calc(14px + var(--safe-r)); bottom: calc(16px + var(--safe-b)); display: flex; gap: 28px 12px; align-items: flex-end; pointer-events: auto; flex-wrap: wrap-reverse; justify-content: flex-end; max-width: 55%; }
 .abtn { position: relative; width: 78px; height: 78px; border-radius: 50%; border: 2px solid rgba(255,255,255,.22); background: rgba(10,14,22,.65); touch-action: none; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .abtn.boost { width: 62px; height: 62px; }
 .abtn canvas { width: 46px; height: 46px; pointer-events: none; }
