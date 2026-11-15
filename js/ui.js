@@ -436,7 +436,7 @@ function openPicker(cat, slot, keepScroll) {
         <div class="meta"><span class="rtag">${RARITY[p.rarity].name}</span><span>Lv ${u.lvl}</span><span>${p.wt} kg</span></div>
         ${pips(u.lvl)}
         <div class="st">${partStats(p, u.lvl).map(esc).join(' · ')}</div>
-        <div class="st muted">${esc(p.desc)}</div>
+        ${partStats(p, u.lvl).join(' ') === p.desc ? '' : `<div class="st muted">${esc(p.desc)}</div>`}
         ${delta}
       </div>
       <div class="pacts">

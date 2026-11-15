@@ -552,3 +552,17 @@ body.attract #bg { display: none; }
   .card canvas { height: 70px; }
 }
 .slot .lv { white-space: nowrap; flex: none; }
+
+/* v1.2.2: long part names must never run into level pills (Safari sizes grid tracks to unbroken text) */
+.slot .si { display: block; flex: 1 1 0; min-width: 0; }
+.slot .nm, .slot .sub { display: block; max-width: 100%; }
+.slot .pips { display: flex; }
+.slot .lv { margin-left: 6px; }
+.pick .pinfo { grid-template-columns: minmax(0, 1fr); }
+.pick .nm, .card .nm, .ctile .nm, .partinfo h3, .bcard .bname, .nextup .ename { overflow-wrap: anywhere; min-width: 0; }
+.ctile { min-width: 0; }
+.ctile .nm { width: 100%; }
+.gtop > div:first-child { min-width: 0; flex: 1 1 0; }
+.gname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nextup .nx { min-width: 0; }
+.qcard .mt { flex: 1 1 0; }
