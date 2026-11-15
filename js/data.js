@@ -7,7 +7,7 @@ export const RARITY = {
   legendary: { name: 'Legendary', color: '#ffb23f', price: 380 },
 };
 export const RARITY_ORDER = ['common', 'rare', 'epic', 'legendary'];
-export const MAX_LEVEL = 5;
+export const MAX_LEVEL = 10;
 export const levelMult = (l) => 1 + 0.12 * ((l || 1) - 1);
 
 export const CATS = {
@@ -43,6 +43,24 @@ const FRAMES = [
   { id: 'phantom', name: 'Phantom', rarity: 'legendary', hp: 145, wt: 15, cap: 92, size: 1.18, turn: 1.25, wy: 0.6, nose: 1.25,
     slots: { wheel: 4, weapon: 3, armor: 1, shield: 1, util: 2 }, shape: 'phantom',
     desc: 'Featherweight chassis with heavyweight firepower.' },
+  { id: 'scuttler', name: 'Scuttler', rarity: 'common', hp: 92, wt: 11, cap: 42, size: 1.02, turn: 1.08, wy: 0.68, nose: 0.92,
+    slots: { wheel: 2, weapon: 1, armor: 1, shield: 1, util: 0 }, shape: 'scuttle',
+    desc: 'Budget brawler with a shield emitter.' },
+  { id: 'rammer', name: 'Battering Ram', rarity: 'rare', hp: 130, wt: 18, cap: 62, size: 1.15, turn: 0.9, wy: 0.8, nose: 1.0, ram: 2.4,
+    slots: { wheel: 4, weapon: 1, armor: 2, shield: 0, util: 1 }, shape: 'ram',
+    desc: 'Flat steel face. Ramming damage x2.4.' },
+  { id: 'viper', name: 'Viper', rarity: 'rare', hp: 100, wt: 12, cap: 58, size: 1.08, turn: 1.3, wy: 0.6, nose: 1.2,
+    slots: { wheel: 2, weapon: 2, armor: 1, shield: 0, util: 1 }, shape: 'viper',
+    desc: 'Agile twin-weapon striker.' },
+  { id: 'bastion', name: 'Bastion', rarity: 'epic', hp: 170, wt: 26, cap: 92, size: 1.3, turn: 0.84, wy: 0.86, nose: 1.0,
+    slots: { wheel: 4, weapon: 2, armor: 3, shield: 1, util: 1 }, shape: 'bastion',
+    desc: 'Walking bunker with three armor bays.' },
+  { id: 'manta', name: 'Manta', rarity: 'epic', hp: 132, wt: 17, cap: 82, size: 1.2, turn: 1.15, wy: 0.7, nose: 1.1,
+    slots: { wheel: 4, weapon: 2, armor: 1, shield: 1, util: 3 }, shape: 'manta',
+    desc: 'Gadget platform with three utility bays.' },
+  { id: 'colossus', name: 'Colossus', rarity: 'legendary', hp: 240, wt: 34, cap: 132, size: 1.5, turn: 0.72, wy: 0.9, nose: 1.05,
+    slots: { wheel: 6, weapon: 3, armor: 3, shield: 1, util: 2 }, shape: 'colossus',
+    desc: 'The biggest chassis allowed in the arena.' },
 ].map((p) => ({ ...p, cat: 'frame' }));
 
 // ---------------------------------------------------------------------------
@@ -63,6 +81,16 @@ const WHEELS = [
     desc: 'Hover over floor spikes and flame vents. Slippery.' },
   { id: 'turbine', name: 'Turbine Wheels', rarity: 'legendary', power: 17, grip: 1.25, top: 1.2, boostCd: 0.75, wt: 2.5, style: 'turbine',
     desc: 'Fastest wheels made. Boost recharges 25% faster.' },
+  { id: 'caster', name: 'Swivel Casters', rarity: 'common', power: 8, grip: 0.9, top: 1.04, turn: 1.2, wt: 1, style: 'omni',
+    desc: 'Light and twitchy, low power.' },
+  { id: 'monster', name: 'Monster Tires', rarity: 'rare', power: 12, grip: 1.45, top: 0.98, kb: 0.08, wt: 3, style: 'knobby',
+    desc: 'Big, grippy and hard to shove.' },
+  { id: 'slick', name: 'Racing Slicks', rarity: 'rare', power: 12, grip: 0.8, top: 1.12, wt: 1.5, style: 'wheel',
+    desc: 'High top speed, drifts in corners.' },
+  { id: 'razor', name: 'Razor Treads', rarity: 'legendary', power: 14, grip: 1.6, top: 0.92, kb: 0.2, contact: 8, wt: 3.5, style: 'tread',
+    desc: 'Bladed treads: traction, knockback resist and contact damage.' },
+  { id: 'quantum', name: 'Quantum Rollers', rarity: 'legendary', power: 15, grip: 1.1, top: 1.12, turn: 1.4, hover: true, wt: 2, style: 'mag',
+    desc: 'Hovering omni-rollers. Fast, nimble, hazard-proof.' },
 ].map((p) => ({ ...p, cat: 'wheel' }));
 
 // ---------------------------------------------------------------------------
@@ -102,6 +130,28 @@ const WEAPONS = [
     desc: 'Superheated blade that melts through armor.' },
   { id: 'rail', name: 'Railgun', rarity: 'legendary', kind: 'rail', style: 'rail', dmg: 50, cd: 2.8, charge: 0.45, range: 900, pierce: 0.5, kb: 240, wt: 9,
     desc: 'TAP to charge and fire a piercing beam.' },
+  { id: 'shredder', name: 'Shredder', rarity: 'common', kind: 'saw', style: 'saw', dps: 22, range: 20, arc: 70, wt: 5,
+    desc: 'HOLD to grind. A cheap, reliable blade.' },
+  { id: 'prod', name: 'Shock Prod', rarity: 'common', kind: 'emp', style: 'emp', dmg: 6, stun: 0.7, cd: 2.6, speed: 480, range: 260, wt: 3,
+    desc: 'TAP for a short-range stun bolt.' },
+  { id: 'eggbeater', name: 'Eggbeater', rarity: 'rare', kind: 'spin', style: 'drum', dmg: 19, kb: 380, spinup: 0.9, range: 20, arc: 80, lift: 0.2, wt: 8,
+    desc: 'Quick to spin up, punchy hits.' },
+  { id: 'sledge', name: 'Sledgehammer', rarity: 'rare', kind: 'hammer', style: 'hammer', dmg: 28, cd: 1.45, range: 48, arc: 80, pierce: 0.55, wt: 8,
+    desc: 'TAP to slam. Heavier head, longer reach.' },
+  { id: 'minigun', name: 'Minigun', rarity: 'rare', kind: 'gun', style: 'gun', dmg: 3, rof: 11, speed: 620, range: 460, wt: 7,
+    desc: 'HOLD to shred with a wall of rivets.' },
+  { id: 'napalm', name: 'Napalm Cannon', rarity: 'epic', kind: 'flame', style: 'flame', dps: 22, burn: 7, range: 135, arc: 36, fuel: 2.4, wt: 7,
+    desc: 'HOLD for sticky fire that burns longer.' },
+  { id: 'crusher', name: 'Hydraulic Crusher', rarity: 'epic', kind: 'hammer', style: 'axe', dmg: 44, cd: 2.0, range: 40, arc: 60, pierce: 0.8, wt: 10,
+    desc: 'TAP to crush. Almost ignores armor.' },
+  { id: 'pulse', name: 'Pulse Rifle', rarity: 'epic', kind: 'rail', style: 'rail', dmg: 30, cd: 1.9, charge: 0.3, range: 700, pierce: 0.3, kb: 160, wt: 6,
+    desc: 'TAP for a fast-charging energy beam.' },
+  { id: 'catapult', name: 'Catapult', rarity: 'legendary', kind: 'flipper', style: 'flipper2', dmg: 16, kb: 1050, air: 1.3, cd: 1.7, range: 24, arc: 90, wt: 9,
+    desc: 'The strongest flipper ever built.' },
+  { id: 'swarm', name: 'Swarm Pod', rarity: 'legendary', kind: 'rocket', style: 'rocket', dmg: 18, radius: 60, kb: 200, cd: 1.3, speed: 400, range: 650, wt: 7,
+    desc: 'TAP for rapid homing micro-rockets.' },
+  { id: 'reaper', name: 'Reaper Disc', rarity: 'legendary', kind: 'spin', style: 'disc', dmg: 34, kb: 600, spinup: 1.25, range: 28, arc: 100, wt: 11,
+    desc: 'Wide, heavy disc that spins up fast.' },
 ].map((p) => ({ ...p, cat: 'weapon' }));
 
 // ---------------------------------------------------------------------------
@@ -116,6 +166,11 @@ const ARMOR = [
   { id: 'composite', name: 'Composite Weave', rarity: 'epic', hp: 75, dr: 0.1, kb: 0.1, wt: 8, look: 'composite', desc: 'Huge health boost.' },
   { id: 'neutronium', name: 'Neutronium Plate', rarity: 'legendary', hp: 100, dr: 0.2, kb: 0.15, wt: 11, look: 'neutron', desc: 'The densest armor in the league.' },
   { id: 'reactive', name: 'Reactive Plating', rarity: 'legendary', hp: 60, dr: 0.14, reactive: 260, wt: 7, look: 'reactive', desc: 'Blasts melee attackers away.' },
+  { id: 'scrap', name: 'Scrap Plating', rarity: 'common', hp: 22, dr: 0.04, wt: 4, look: 'scrap', desc: 'Welded junk. Better than nothing.' },
+  { id: 'kevlar', name: 'Kevlar Mesh', rarity: 'rare', hp: 36, dr: 0.07, kb: 0.12, wt: 3, look: 'kevlar', desc: 'Light weave that absorbs impacts.' },
+  { id: 'bulkhead', name: 'Bulkhead Slab', rarity: 'rare', hp: 70, dr: 0.06, kb: 0.2, wt: 12, look: 'bulk', desc: 'Massive health, massive weight.' },
+  { id: 'mirror', name: 'Mirror Plate', rarity: 'epic', hp: 38, dr: 0.1, thorns: 0.4, wt: 6, look: 'mirror', desc: 'Reflects 40% of melee damage.' },
+  { id: 'dragon', name: 'Dragonscale', rarity: 'legendary', hp: 85, dr: 0.18, thorns: 0.15, wt: 8, look: 'dragon', desc: 'Overlapping scales that bite back.' },
 ].map((p) => ({ ...p, cat: 'armor' }));
 
 // ---------------------------------------------------------------------------
@@ -126,6 +181,10 @@ const SHIELDS = [
   { id: 'ion', name: 'Ion Barrier', rarity: 'rare', cap: 40, regen: 9, delay: 2.6, wt: 3, desc: 'Solid all-round shield.' },
   { id: 'hexshield', name: 'Hex Shield', rarity: 'epic', cap: 62, regen: 13, delay: 2.2, wt: 4, desc: 'Honeycomb energy lattice.' },
   { id: 'aegis', name: 'Aegis Core', rarity: 'legendary', cap: 95, regen: 18, delay: 1.8, wt: 4, desc: 'Near-impenetrable bubble.' },
+  { id: 'bubble', name: 'Bubble Field', rarity: 'common', cap: 18, regen: 10, delay: 2.0, wt: 2, desc: 'Weak but recovers quickly.' },
+  { id: 'flux', name: 'Flux Barrier', rarity: 'rare', cap: 55, regen: 6, delay: 3.4, wt: 4, desc: 'Big buffer, slow to recover.' },
+  { id: 'phase', name: 'Phase Veil', rarity: 'epic', cap: 48, regen: 24, delay: 1.4, wt: 3, desc: 'Flickers back almost instantly.' },
+  { id: 'fortress', name: 'Fortress Dome', rarity: 'legendary', cap: 130, regen: 10, delay: 3.0, wt: 6, desc: 'Enormous capacity.' },
 ].map((p) => ({ ...p, cat: 'shield' }));
 
 // ---------------------------------------------------------------------------
@@ -139,6 +198,14 @@ const UTILS = [
   { id: 'anchor', name: 'Anchor Magnet', rarity: 'epic', anchor: true, wt: 3, glyph: 'A', desc: 'Saves you from one pit fall per match.' },
   { id: 'targeting', name: 'Targeting AI', rarity: 'legendary', crit: 0.18, homing: 1.6, wt: 1, glyph: 'T', desc: '18% crits (x1.6), better rocket tracking.' },
   { id: 'nanoforge', name: 'Nano Forge', rarity: 'legendary', regen: 4, shieldRegen: 1.3, wt: 2, glyph: 'F', desc: 'Repairs 4 HP/s, faster shield regen.' },
+  { id: 'ballast', name: 'Ballast Weights', rarity: 'common', kb: 0.35, wt: 5, glyph: 'B', desc: 'Heavy weights: much harder to shove.' },
+  { id: 'patch', name: 'Patch Kit', rarity: 'common', regen: 0.8, wt: 1, glyph: 'P', desc: 'Repairs 0.8 HP per second.' },
+  { id: 'coolant', name: 'Coolant Loop', rarity: 'rare', cdMul: 0.88, wt: 2, glyph: 'C', desc: 'Weapons recharge 12% faster.' },
+  { id: 'capacitor', name: 'Shield Capacitor', rarity: 'rare', shieldRegen: 1.45, wt: 1, glyph: 'Q', desc: 'Shields regenerate 45% faster.' },
+  { id: 'scanner', name: 'Weak-Point Scanner', rarity: 'epic', crit: 0.12, wt: 1, glyph: 'S', desc: '12% chance to crit (x1.6).' },
+  { id: 'lucky', name: 'Lucky Bolt', rarity: 'epic', luck: 0.2, wt: 0.5, glyph: '$', desc: '+20% credits from every fight (+2% per level).' },
+  { id: 'afterburner', name: 'Afterburner', rarity: 'legendary', boost: 2.4, boostCd: 0.45, wt: 2, glyph: 'X', desc: 'Huge boost that recharges very fast.' },
+  { id: 'berserk', name: 'Berserker Core', rarity: 'legendary', dmgMul: 1.22, cdMul: 0.92, wt: 2, glyph: 'R', desc: '+22% damage, weapons recharge 8% faster.' },
 ].map((p) => ({ ...p, cat: 'util' }));
 
 export const PARTS = [...FRAMES, ...WHEELS, ...WEAPONS, ...ARMOR, ...SHIELDS, ...UTILS];
@@ -299,7 +366,10 @@ export const TIPS = [
   'Going over your frame\'s weight capacity slows you down.',
   'Shields recharge if you avoid damage for a few seconds.',
   'Mag-Lev Pods float over spike strips and flame vents.',
-  'Buy duplicate cards to level parts up in the Garage.',
+  'Buy duplicate cards to level parts up in the Garage. Parts go all the way to Lv 10.',
+  'Quick Brawl is a great way to farm credits between series matches.',
+  'Tough brawl opponents pay out a lot more.',
+  'The Lucky Bolt utility boosts every credit payout.',
   'Rerolling the shop costs more each time. Spend wisely.',
   'If time runs out, the judges award the win on damage dealt.',
   'Boost to dodge a big hit or to slam into an enemy.',

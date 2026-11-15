@@ -2,7 +2,7 @@
  * To ship an update: change VERSION below (or run `node tools/bump-version.mjs`) and push.
  * Installed apps detect the changed worker, download the new files in the background,
  * and the page activates them automatically on the next menu screen. */
-const VERSION = '1.0.2';
+const VERSION = '1.1.0';
 const CACHE = `cursorbots-${VERSION}`;
 const ASSETS = [
   './',

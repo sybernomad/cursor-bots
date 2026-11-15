@@ -1,5 +1,5 @@
 // Cursor Bots — save data, economy, shop dealing, progression and opponent generation.
-import { PART, PARTS, RARITY, RARITY_ORDER, LEAGUES, PRO, BOSSES, BOT_NAMES, STARTER_BUILD, MAX_LEVEL } from './data.js';
+import { PART, PARTS, RARITY, RARITY_ORDER, LEAGUES, PRO, BOSSES, BOT_NAMES, STARTER_BUILD, MAX_LEVEL, ARENAS } from './data.js';
 import { computeStats } from './engine.js';
 
 const KEY = 'cursorbots.save.v1';
@@ -15,7 +15,8 @@ export function defaultSave() {
     shop: null,
     nextEnemy: null,
     tut: { match: false, shop: false, garage: false },
-    settings: { sound: true, haptics: true },
+    settings: { sound: true, haptics: true, music: true, sfxVol: 0.8, musicVol: 0.5, shake: true, difficulty: 'normal' },
+    brawl: { offers: null, streak: 0, best: 0, wins: 0, played: 0 },
     stats: { wins: 0, losses: 0, kos: 0, pits: 0, matches: 0 },
     seed: Math.floor(Math.random() * 1e9),
   };
@@ -28,7 +29,7 @@ export function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      S.data = { ...defaultSave(), ...d, settings: { ...defaultSave().settings, ...(d.settings || {}) }, tut: { ...defaultSave().tut, ...(d.tut || {}) }, stats: { ...defaultSave().stats, ...(d.stats || {}) } };
+      S.data = { ...defaultSave(), ...d, settings: { ...defaultSave().settings, ...(d.settings || {}) }, tut: { ...defaultSave().tut, ...(d.tut || {}) }, brawl: { ...defaultSave().brawl, ...(d.brawl || {}) }, stats: { ...defaultSave().stats, ...(d.stats || {}) } };
       sanitize();
       return S.data;
     }
@@ -87,7 +88,7 @@ export function upgradeInfo(id) {
   const it = S.data.inv[id]; if (!it) return null;
   const p = PART[id];
   if (it.lvl >= MAX_LEVEL) return { max: true, lvl: it.lvl };
-  const need = it.lvl; // copies needed to reach next level
+  const need = Math.ceil(it.lvl / 2); // copies needed to reach next level (1,1,2,2,3,3,4,4,5)
   const cost = Math.round(RARITY[p.rarity].price * 0.5 * it.lvl);
   return { max: false, lvl: it.lvl, copies: it.copies, need, cost, can: it.copies >= need && S.data.credits >= cost };
 }
@@ -97,6 +98,38 @@ export function upgrade(id) {
   it.copies -= u.need; it.lvl++; S.data.credits -= u.cost; save();
   return true;
 }
+
+// --------------------------------------------------------------------------
+// AI difficulty (Settings). Applied when a fight starts, so changes take effect immediately.
+// --------------------------------------------------------------------------
+export const DIFFICULTY = {
+  easy:   { name: 'Easy',   desc: 'Slower, sloppier bots with weaker parts. Rewards x0.8.', mul: 0.55, add: -0.04, lvl: -1, reward: 0.8 },
+  normal: { name: 'Normal', desc: 'The intended challenge. Rewards x1.', mul: 1, add: 0, lvl: 0, reward: 1 },
+  hard:   { name: 'Hard',   desc: 'Sharper AI and upgraded enemy parts. Rewards x1.25.', mul: 1.12, add: 0.12, lvl: 1, reward: 1.25 },
+  brutal: { name: 'Brutal', desc: 'Ruthless AI, heavily upgraded parts. Rewards x1.5.', mul: 1.2, add: 0.25, lvl: 2, reward: 1.5 },
+};
+export const difficulty = () => DIFFICULTY[S.data.settings.difficulty] || DIFFICULTY.normal;
+export function adjustEnemy(e) {
+  if (e.tutorial || e.dummy) return { levels: e.levels, diff: e.diff };
+  const D = difficulty();
+  const levels = {};
+  for (const [id, l] of Object.entries(e.levels || {})) levels[id] = Math.max(1, Math.min(MAX_LEVEL, l + D.lvl));
+  for (const id of [e.build.frame, e.build.wheel, ...e.build.weapons, ...e.build.armor, e.build.shield, ...e.build.util]) if (id && !levels[id]) levels[id] = Math.max(1, 1 + D.lvl);
+  return { levels, diff: Math.max(0.02, Math.min(1, (e.diff || 0) * D.mul + D.add)) };
+}
+export function luckBonus() {
+  let l = 0;
+  for (const id of S.data.build.util || []) if (id && PART[id].luck) l += PART[id].luck + 0.02 * (lvl(id) - 1);
+  return l;
+}
+
+// --------------------------------------------------------------------------
+// Developer / testing helpers (Settings > Developer)
+// --------------------------------------------------------------------------
+export function devGiveAll() { for (const p of PARTS) if (!S.data.inv[p.id]) S.data.inv[p.id] = { lvl: 1, copies: 0 }; save(); }
+export function devCredits(n) { S.data.credits += n; save(); }
+export function devMaxAll() { for (const it of Object.values(S.data.inv)) { it.lvl = MAX_LEVEL; it.copies = 0; } save(); }
+export function devNextLeague() { S.data.tut = { match: true, shop: true, garage: true }; if (S.data.league < LEAGUES.length) S.data.league++; S.data.match = 0; S.data.nextEnemy = null; S.data.brawl.offers = null; save(); }
 
 // --------------------------------------------------------------------------
 // Seeded RNG
@@ -193,36 +226,123 @@ export function nextEnemy() {
     const boss = isBossMatch();
     const p = L.power + d.match / Math.max(1, L.matches) + (boss ? 1 : 0);
     const first = L.index === 0 && d.match === 1;
-    const w = L.rarity.slice(); if (boss) { w[2] += 15; w[3] += 10; }
-    const roll = (cat, extra) => {
-      for (let k = 0; k < 20; k++) {
-        const rar = first ? 'common' : rollRarity(r, w);
-        const pool = PARTS.filter((q) => q.cat === cat && q.rarity === rar && (!extra || extra(q)));
-        if (pool.length) return pick(r, pool).id;
-      }
-      return PARTS.find((q) => q.cat === cat && (!extra || extra(q))).id;
-    };
-    const build = { frame: first ? 'dart' : roll('frame'), wheel: roll('wheel'), weapons: [], armor: [], shield: null, util: [] };
-    const F = PART[build.frame];
-    for (let i = 0; i < F.slots.weapon; i++) if (i === 0 || r() < 0.45 + 0.1 * p) build.weapons.push(roll('weapon', (q) => !build.weapons.includes(q.id)));
-    if (first) { build.wheel = 'rubber'; build.weapons = ['flipper']; build.armor = ['bumpers']; }
-    for (let i = 0; i < F.slots.armor; i++) if (i === 0 || r() < 0.5 + 0.1 * p) build.armor.push(roll('armor', (q) => !build.armor.includes(q.id)));
-    if (F.slots.shield && r() < 0.25 + 0.15 * p) build.shield = roll('shield');
-    for (let i = 0; i < F.slots.util; i++) if (r() < 0.2 + 0.15 * p) build.util.push(roll('util', (q) => !build.util.includes(q.id)));
-    // respect capacity: drop extras until near cap
-    const st = () => computeStats(build);
-    while (st().over > 0.12 && (build.util.length || build.armor.length > 1 || build.weapons.length > 1)) {
-      if (build.util.length) build.util.pop(); else if (build.armor.length > 1) build.armor.pop(); else build.weapons.pop();
-    }
-    const levels = {};
-    const maxL = Math.min(MAX_LEVEL, 1 + Math.floor(p * 0.8));
-    for (const id of [build.frame, build.wheel, ...build.weapons, ...build.armor, build.shield, ...build.util]) if (id) levels[id] = Math.max(1, Math.min(maxL, 1 + Math.floor(r() * (maxL + 0.5))));
-    const diff = Math.min(0.95, (first ? 0.08 : 0.16 + p * 0.15) + (boss ? 0.1 : 0));
-    e = { name: boss ? pick(r, BOT_NAMES).toUpperCase() : pick(r, BOT_NAMES), title: boss ? 'Circuit Boss' : L.name, build, levels, diff, boss, team: boss ? 'boss' : 'enemy' };
+    e = genBot(r, p, { boss, first, rarity: L.rarity, title: boss ? 'Circuit Boss' : L.name });
   }
   fitBuild(e.build);
   d.nextEnemy = e; save();
   return e;
+}
+
+export function genBot(r, p, o = {}) {
+  const { boss = false, first = false } = o;
+  const w = (o.rarity || [60, 30, 9, 1]).slice(); if (boss) { w[2] += 15; w[3] += 10; }
+  const roll = (cat, extra) => {
+    for (let k = 0; k < 20; k++) {
+      const rar = first ? 'common' : rollRarity(r, w);
+      const pool = PARTS.filter((q) => q.cat === cat && q.rarity === rar && (!extra || extra(q)));
+      if (pool.length) return pick(r, pool).id;
+    }
+    return PARTS.find((q) => q.cat === cat && (!extra || extra(q))).id;
+  };
+  const build = { frame: first ? 'dart' : roll('frame'), wheel: roll('wheel'), weapons: [], armor: [], shield: null, util: [] };
+  const F = PART[build.frame];
+  for (let i = 0; i < F.slots.weapon; i++) if (i === 0 || r() < 0.45 + 0.1 * p) build.weapons.push(roll('weapon', (q) => !build.weapons.includes(q.id)));
+  if (first) { build.wheel = 'rubber'; build.weapons = ['flipper']; build.armor = ['bumpers']; }
+  for (let i = 0; i < F.slots.armor; i++) if (i === 0 || r() < 0.5 + 0.1 * p) build.armor.push(roll('armor', (q) => !build.armor.includes(q.id)));
+  if (F.slots.shield && r() < 0.25 + 0.15 * p) build.shield = roll('shield');
+  for (let i = 0; i < F.slots.util; i++) if (r() < 0.2 + 0.15 * p) build.util.push(roll('util', (q) => !build.util.includes(q.id) && !q.luck));
+  // respect capacity: drop extras until near cap
+  const st = () => computeStats(build);
+  while (st().over > 0.12 && (build.util.length || build.armor.length > 1 || build.weapons.length > 1)) {
+    if (build.util.length) build.util.pop(); else if (build.armor.length > 1) build.armor.pop(); else build.weapons.pop();
+  }
+  const levels = {};
+  const maxL = Math.max(1, Math.min(MAX_LEVEL, 1 + Math.floor(p * 0.8)));
+  for (const id of [build.frame, build.wheel, ...build.weapons, ...build.armor, build.shield, ...build.util]) if (id) levels[id] = Math.max(1, Math.min(maxL, 1 + Math.floor(r() * (maxL + 0.5))));
+  const diff = Math.min(0.95, (first ? 0.08 : 0.16 + p * 0.15) + (boss ? 0.1 : 0));
+  const e = { name: boss ? pick(r, BOT_NAMES).toUpperCase() : pick(r, BOT_NAMES), title: o.title || '', build, levels, diff, boss, team: boss ? 'boss' : 'enemy' };
+  fitBuild(e.build);
+  return e;
+}
+
+// --------------------------------------------------------------------------
+// Quick Brawl — side fights for credits. Three offers: warm-up, even, tough.
+// No series progress; streaks and part drops keep it interesting.
+// --------------------------------------------------------------------------
+export const BRAWL_TIERS = [
+  { key: 'easy', name: 'Warm-up', dp: -0.7, mult: 0.55, drop: 0.12, color: '#5be38a' },
+  { key: 'even', name: 'Even Match', dp: 0, mult: 1, drop: 0.22, color: '#3ff0ff' },
+  { key: 'tough', name: 'Tough', dp: 0.9, mult: 1.75, drop: 0.4, color: '#ff4d7a' },
+];
+export function brawlUnlocked() { return !!S.data.tut.match; }
+export function unlockedArenas() {
+  const ids = ['yard'];
+  for (let i = 0; i <= Math.min(S.data.league, LEAGUES.length - 1); i++) if (!ids.includes(LEAGUES[i].arena)) ids.push(LEAGUES[i].arena);
+  if (S.data.league >= LEAGUES.length) for (const a of PRO.arenas) if (!ids.includes(a)) ids.push(a);
+  return ids.filter((a) => ARENAS[a]);
+}
+export function brawlOffers() {
+  const d = S.data;
+  if (d.brawl.offers) return d.brawl.offers;
+  const L = currentLeague();
+  const r = rng(d.seed ^ (d.brawl.played * 2654435761) ^ (Date.now() & 0xffff));
+  const arenas = unlockedArenas();
+  const baseP = L.power + (L.pro ? 0 : d.match / Math.max(1, L.matches)) + 0.2;
+  d.brawl.offers = BRAWL_TIERS.map((t) => {
+    const p = Math.max(0, baseP + t.dp);
+    const e = genBot(r, p, { rarity: L.rarity, title: `${t.name} brawl`, first: L.index === 0 && t.key === 'easy' && p < 0.3 });
+    if (t.key === 'tough') { e.team = 'boss'; e.diff = Math.min(0.95, e.diff + 0.06); }
+    return { tier: t.key, enemy: e, arena: pick(r, arenas), reward: Math.round(L.reward * 0.6 * t.mult / 5) * 5 };
+  });
+  save();
+  return d.brawl.offers;
+}
+export function rerollBrawl() { S.data.brawl.offers = null; S.data.brawl.played++; return brawlOffers(); }
+
+function dropPart(rarityWeights, r) {
+  const rar = rollRarity(r, rarityWeights);
+  const pool = PARTS.filter((p) => p.rarity === rar);
+  const p = pick(r, pool);
+  const inv = S.data.inv;
+  if (inv[p.id]) inv[p.id].copies++; else inv[p.id] = { lvl: 1, copies: 0 };
+  return p.id;
+}
+
+function applyBrawl(res, offer) {
+  const d = S.data, L = currentLeague(), Dm = difficulty();
+  const T = BRAWL_TIERS.find((t) => t.key === offer.tier) || BRAWL_TIERS[1];
+  const out = { credits: 0, xp: 0, lines: [], leagueUp: null, levelUp: null, drop: null, brawl: true };
+  const before = pilotLevel();
+  d.stats.matches++; d.brawl.played++;
+  if (res.win) {
+    d.stats.wins++; d.brawl.wins++; if (res.how === 'ko') d.stats.kos++; if (res.how === 'pit') d.stats.pits++;
+    d.brawl.streak++; d.brawl.best = Math.max(d.brawl.best, d.brawl.streak);
+    out.lines.push([`${T.name} win`, offer.reward]); out.credits += offer.reward;
+    if (res.how === 'ko' || res.how === 'pit') { const b = Math.round(offer.reward * 0.25); out.lines.push([res.how === 'pit' ? 'Pit bonus' : 'Knockout bonus', b]); out.credits += b; }
+    if (d.brawl.streak > 1) { const b = Math.round(offer.reward * Math.min(0.5, 0.1 * (d.brawl.streak - 1))); out.lines.push([`Win streak x${d.brawl.streak}`, b]); out.credits += b; }
+    const r = rng(d.seed + d.stats.matches * 131);
+    if (r() < T.drop) { out.drop = dropPart(L.rarity, r); }
+    out.xp = 20 + L.index * 6 + (T.key === 'tough' ? 15 : 0);
+  } else {
+    d.stats.losses++; d.brawl.streak = 0;
+    const c = Math.round(offer.reward * 0.25); out.lines.push(['Appearance fee', c]); out.credits += c; out.xp = 8;
+  }
+  finishRewards(out, before, Dm);
+  d.brawl.offers = null;
+  dealShop();
+  save();
+  return out;
+}
+
+function finishRewards(out, before, Dm) {
+  const d = S.data;
+  const base = out.credits;
+  if (Dm.reward !== 1 && base) { const b = Math.round(base * (Dm.reward - 1)); out.lines.push([`${Dm.name} difficulty`, b]); out.credits += b; }
+  const lk = luckBonus();
+  if (lk > 0 && base) { const b = Math.round(base * lk); out.lines.push(['Lucky Bolt', b]); out.credits += b; }
+  d.credits += out.credits; d.xp += out.xp;
+  const after = pilotLevel();
+  if (after > before) { const b = 40 * after; d.credits += b; out.levelUp = { level: after, bonus: b }; }
 }
 
 // --------------------------------------------------------------------------
@@ -230,7 +350,8 @@ export function nextEnemy() {
 // --------------------------------------------------------------------------
 export const pilotLevel = (xp = S.data.xp) => Math.floor(Math.sqrt(xp / 60)) + 1;
 
-export function applyResult(res) {
+export function applyResult(res, mode, offer) {
+  if (mode === 'brawl') return applyBrawl(res, offer);
   const d = S.data, L = currentLeague();
   const boss = isBossMatch();
   const out = { credits: 0, xp: 0, lines: [], leagueUp: null, levelUp: null };
@@ -256,10 +377,8 @@ export function applyResult(res) {
     const c = Math.round(L.reward * 0.35);
     out.lines.push(['Repair stipend', c]); out.credits += c; out.xp = 15;
   }
-  d.credits += out.credits; d.xp += out.xp;
-  const after = pilotLevel();
-  if (after > before) { const b = 40 * after; d.credits += b; out.levelUp = { level: after, bonus: b }; }
-  d.nextEnemy = null;
+  if (res.tutorial) { d.credits += out.credits; d.xp += out.xp; } else finishRewards(out, before, difficulty());
+  d.nextEnemy = null; d.brawl.offers = null;
   // deal a fresh shop
   if (res.tutorial) dealShop(['brick', 'knobby', 'hammer', 'bumpers', 'nitro']);
   else dealShop();

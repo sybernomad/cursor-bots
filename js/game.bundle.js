@@ -7,7 +7,7 @@
     legendary: { name: "Legendary", color: "#ffb23f", price: 380 }
   };
   var RARITY_ORDER = ["common", "rare", "epic", "legendary"];
-  var MAX_LEVEL = 5;
+  var MAX_LEVEL = 10;
   var levelMult = (l) => 1 + 0.12 * ((l || 1) - 1);
   var CATS = {
     frame: "Frame",
@@ -138,6 +138,97 @@
       slots: { wheel: 4, weapon: 3, armor: 1, shield: 1, util: 2 },
       shape: "phantom",
       desc: "Featherweight chassis with heavyweight firepower."
+    },
+    {
+      id: "scuttler",
+      name: "Scuttler",
+      rarity: "common",
+      hp: 92,
+      wt: 11,
+      cap: 42,
+      size: 1.02,
+      turn: 1.08,
+      wy: 0.68,
+      nose: 0.92,
+      slots: { wheel: 2, weapon: 1, armor: 1, shield: 1, util: 0 },
+      shape: "scuttle",
+      desc: "Budget brawler with a shield emitter."
+    },
+    {
+      id: "rammer",
+      name: "Battering Ram",
+      rarity: "rare",
+      hp: 130,
+      wt: 18,
+      cap: 62,
+      size: 1.15,
+      turn: 0.9,
+      wy: 0.8,
+      nose: 1,
+      ram: 2.4,
+      slots: { wheel: 4, weapon: 1, armor: 2, shield: 0, util: 1 },
+      shape: "ram",
+      desc: "Flat steel face. Ramming damage x2.4."
+    },
+    {
+      id: "viper",
+      name: "Viper",
+      rarity: "rare",
+      hp: 100,
+      wt: 12,
+      cap: 58,
+      size: 1.08,
+      turn: 1.3,
+      wy: 0.6,
+      nose: 1.2,
+      slots: { wheel: 2, weapon: 2, armor: 1, shield: 0, util: 1 },
+      shape: "viper",
+      desc: "Agile twin-weapon striker."
+    },
+    {
+      id: "bastion",
+      name: "Bastion",
+      rarity: "epic",
+      hp: 170,
+      wt: 26,
+      cap: 92,
+      size: 1.3,
+      turn: 0.84,
+      wy: 0.86,
+      nose: 1,
+      slots: { wheel: 4, weapon: 2, armor: 3, shield: 1, util: 1 },
+      shape: "bastion",
+      desc: "Walking bunker with three armor bays."
+    },
+    {
+      id: "manta",
+      name: "Manta",
+      rarity: "epic",
+      hp: 132,
+      wt: 17,
+      cap: 82,
+      size: 1.2,
+      turn: 1.15,
+      wy: 0.7,
+      nose: 1.1,
+      slots: { wheel: 4, weapon: 2, armor: 1, shield: 1, util: 3 },
+      shape: "manta",
+      desc: "Gadget platform with three utility bays."
+    },
+    {
+      id: "colossus",
+      name: "Colossus",
+      rarity: "legendary",
+      hp: 240,
+      wt: 34,
+      cap: 132,
+      size: 1.5,
+      turn: 0.72,
+      wy: 0.9,
+      nose: 1.05,
+      slots: { wheel: 6, weapon: 3, armor: 3, shield: 1, util: 2 },
+      shape: "colossus",
+      desc: "The biggest chassis allowed in the arena."
     }
   ].map((p) => ({ ...p, cat: "frame" }));
   var WHEELS = [
@@ -222,6 +313,67 @@
       wt: 2.5,
       style: "turbine",
       desc: "Fastest wheels made. Boost recharges 25% faster."
+    },
+    {
+      id: "caster",
+      name: "Swivel Casters",
+      rarity: "common",
+      power: 8,
+      grip: 0.9,
+      top: 1.04,
+      turn: 1.2,
+      wt: 1,
+      style: "omni",
+      desc: "Light and twitchy, low power."
+    },
+    {
+      id: "monster",
+      name: "Monster Tires",
+      rarity: "rare",
+      power: 12,
+      grip: 1.45,
+      top: 0.98,
+      kb: 0.08,
+      wt: 3,
+      style: "knobby",
+      desc: "Big, grippy and hard to shove."
+    },
+    {
+      id: "slick",
+      name: "Racing Slicks",
+      rarity: "rare",
+      power: 12,
+      grip: 0.8,
+      top: 1.12,
+      wt: 1.5,
+      style: "wheel",
+      desc: "High top speed, drifts in corners."
+    },
+    {
+      id: "razor",
+      name: "Razor Treads",
+      rarity: "legendary",
+      power: 14,
+      grip: 1.6,
+      top: 0.92,
+      kb: 0.2,
+      contact: 8,
+      wt: 3.5,
+      style: "tread",
+      desc: "Bladed treads: traction, knockback resist and contact damage."
+    },
+    {
+      id: "quantum",
+      name: "Quantum Rollers",
+      rarity: "legendary",
+      power: 15,
+      grip: 1.1,
+      top: 1.12,
+      turn: 1.4,
+      hover: true,
+      wt: 2,
+      style: "mag",
+      desc: "Hovering omni-rollers. Fast, nimble, hazard-proof."
     }
   ].map((p) => ({ ...p, cat: "wheel" }));
   var WEAPONS = [
@@ -436,6 +588,161 @@
       kb: 240,
       wt: 9,
       desc: "TAP to charge and fire a piercing beam."
+    },
+    {
+      id: "shredder",
+      name: "Shredder",
+      rarity: "common",
+      kind: "saw",
+      style: "saw",
+      dps: 22,
+      range: 20,
+      arc: 70,
+      wt: 5,
+      desc: "HOLD to grind. A cheap, reliable blade."
+    },
+    {
+      id: "prod",
+      name: "Shock Prod",
+      rarity: "common",
+      kind: "emp",
+      style: "emp",
+      dmg: 6,
+      stun: 0.7,
+      cd: 2.6,
+      speed: 480,
+      range: 260,
+      wt: 3,
+      desc: "TAP for a short-range stun bolt."
+    },
+    {
+      id: "eggbeater",
+      name: "Eggbeater",
+      rarity: "rare",
+      kind: "spin",
+      style: "drum",
+      dmg: 19,
+      kb: 380,
+      spinup: 0.9,
+      range: 20,
+      arc: 80,
+      lift: 0.2,
+      wt: 8,
+      desc: "Quick to spin up, punchy hits."
+    },
+    {
+      id: "sledge",
+      name: "Sledgehammer",
+      rarity: "rare",
+      kind: "hammer",
+      style: "hammer",
+      dmg: 28,
+      cd: 1.45,
+      range: 48,
+      arc: 80,
+      pierce: 0.55,
+      wt: 8,
+      desc: "TAP to slam. Heavier head, longer reach."
+    },
+    {
+      id: "minigun",
+      name: "Minigun",
+      rarity: "rare",
+      kind: "gun",
+      style: "gun",
+      dmg: 3,
+      rof: 11,
+      speed: 620,
+      range: 460,
+      wt: 7,
+      desc: "HOLD to shred with a wall of rivets."
+    },
+    {
+      id: "napalm",
+      name: "Napalm Cannon",
+      rarity: "epic",
+      kind: "flame",
+      style: "flame",
+      dps: 22,
+      burn: 7,
+      range: 135,
+      arc: 36,
+      fuel: 2.4,
+      wt: 7,
+      desc: "HOLD for sticky fire that burns longer."
+    },
+    {
+      id: "crusher",
+      name: "Hydraulic Crusher",
+      rarity: "epic",
+      kind: "hammer",
+      style: "axe",
+      dmg: 44,
+      cd: 2,
+      range: 40,
+      arc: 60,
+      pierce: 0.8,
+      wt: 10,
+      desc: "TAP to crush. Almost ignores armor."
+    },
+    {
+      id: "pulse",
+      name: "Pulse Rifle",
+      rarity: "epic",
+      kind: "rail",
+      style: "rail",
+      dmg: 30,
+      cd: 1.9,
+      charge: 0.3,
+      range: 700,
+      pierce: 0.3,
+      kb: 160,
+      wt: 6,
+      desc: "TAP for a fast-charging energy beam."
+    },
+    {
+      id: "catapult",
+      name: "Catapult",
+      rarity: "legendary",
+      kind: "flipper",
+      style: "flipper2",
+      dmg: 16,
+      kb: 1050,
+      air: 1.3,
+      cd: 1.7,
+      range: 24,
+      arc: 90,
+      wt: 9,
+      desc: "The strongest flipper ever built."
+    },
+    {
+      id: "swarm",
+      name: "Swarm Pod",
+      rarity: "legendary",
+      kind: "rocket",
+      style: "rocket",
+      dmg: 18,
+      radius: 60,
+      kb: 200,
+      cd: 1.3,
+      speed: 400,
+      range: 650,
+      wt: 7,
+      desc: "TAP for rapid homing micro-rockets."
+    },
+    {
+      id: "reaper",
+      name: "Reaper Disc",
+      rarity: "legendary",
+      kind: "spin",
+      style: "disc",
+      dmg: 34,
+      kb: 600,
+      spinup: 1.25,
+      range: 28,
+      arc: 100,
+      wt: 11,
+      desc: "Wide, heavy disc that spins up fast."
     }
   ].map((p) => ({ ...p, cat: "weapon" }));
   var ARMOR = [
@@ -446,13 +753,22 @@
     { id: "ceramic", name: "Ablative Ceramic", rarity: "epic", hp: 40, dr: 0.17, wt: 6, look: "ceramic", desc: "High damage reduction." },
     { id: "composite", name: "Composite Weave", rarity: "epic", hp: 75, dr: 0.1, kb: 0.1, wt: 8, look: "composite", desc: "Huge health boost." },
     { id: "neutronium", name: "Neutronium Plate", rarity: "legendary", hp: 100, dr: 0.2, kb: 0.15, wt: 11, look: "neutron", desc: "The densest armor in the league." },
-    { id: "reactive", name: "Reactive Plating", rarity: "legendary", hp: 60, dr: 0.14, reactive: 260, wt: 7, look: "reactive", desc: "Blasts melee attackers away." }
+    { id: "reactive", name: "Reactive Plating", rarity: "legendary", hp: 60, dr: 0.14, reactive: 260, wt: 7, look: "reactive", desc: "Blasts melee attackers away." },
+    { id: "scrap", name: "Scrap Plating", rarity: "common", hp: 22, dr: 0.04, wt: 4, look: "scrap", desc: "Welded junk. Better than nothing." },
+    { id: "kevlar", name: "Kevlar Mesh", rarity: "rare", hp: 36, dr: 0.07, kb: 0.12, wt: 3, look: "kevlar", desc: "Light weave that absorbs impacts." },
+    { id: "bulkhead", name: "Bulkhead Slab", rarity: "rare", hp: 70, dr: 0.06, kb: 0.2, wt: 12, look: "bulk", desc: "Massive health, massive weight." },
+    { id: "mirror", name: "Mirror Plate", rarity: "epic", hp: 38, dr: 0.1, thorns: 0.4, wt: 6, look: "mirror", desc: "Reflects 40% of melee damage." },
+    { id: "dragon", name: "Dragonscale", rarity: "legendary", hp: 85, dr: 0.18, thorns: 0.15, wt: 8, look: "dragon", desc: "Overlapping scales that bite back." }
   ].map((p) => ({ ...p, cat: "armor" }));
   var SHIELDS = [
     { id: "deflector", name: "Deflector", rarity: "common", cap: 25, regen: 6, delay: 3, wt: 3, desc: "Small regenerating barrier." },
     { id: "ion", name: "Ion Barrier", rarity: "rare", cap: 40, regen: 9, delay: 2.6, wt: 3, desc: "Solid all-round shield." },
     { id: "hexshield", name: "Hex Shield", rarity: "epic", cap: 62, regen: 13, delay: 2.2, wt: 4, desc: "Honeycomb energy lattice." },
-    { id: "aegis", name: "Aegis Core", rarity: "legendary", cap: 95, regen: 18, delay: 1.8, wt: 4, desc: "Near-impenetrable bubble." }
+    { id: "aegis", name: "Aegis Core", rarity: "legendary", cap: 95, regen: 18, delay: 1.8, wt: 4, desc: "Near-impenetrable bubble." },
+    { id: "bubble", name: "Bubble Field", rarity: "common", cap: 18, regen: 10, delay: 2, wt: 2, desc: "Weak but recovers quickly." },
+    { id: "flux", name: "Flux Barrier", rarity: "rare", cap: 55, regen: 6, delay: 3.4, wt: 4, desc: "Big buffer, slow to recover." },
+    { id: "phase", name: "Phase Veil", rarity: "epic", cap: 48, regen: 24, delay: 1.4, wt: 3, desc: "Flickers back almost instantly." },
+    { id: "fortress", name: "Fortress Dome", rarity: "legendary", cap: 130, regen: 10, delay: 3, wt: 6, desc: "Enormous capacity." }
   ].map((p) => ({ ...p, cat: "shield" }));
   var UTILS = [
     { id: "nitro", name: "Nitro Booster", rarity: "common", boost: 1.8, boostCd: 0.6, wt: 2, glyph: "N", desc: "Stronger boost, faster recharge." },
@@ -461,7 +777,15 @@
     { id: "overclock", name: "Overclock Chip", rarity: "epic", cdMul: 0.8, dmgMul: 1.1, wt: 1, glyph: "O", desc: "Weapons recharge 20% faster, +10% damage." },
     { id: "anchor", name: "Anchor Magnet", rarity: "epic", anchor: true, wt: 3, glyph: "A", desc: "Saves you from one pit fall per match." },
     { id: "targeting", name: "Targeting AI", rarity: "legendary", crit: 0.18, homing: 1.6, wt: 1, glyph: "T", desc: "18% crits (x1.6), better rocket tracking." },
-    { id: "nanoforge", name: "Nano Forge", rarity: "legendary", regen: 4, shieldRegen: 1.3, wt: 2, glyph: "F", desc: "Repairs 4 HP/s, faster shield regen." }
+    { id: "nanoforge", name: "Nano Forge", rarity: "legendary", regen: 4, shieldRegen: 1.3, wt: 2, glyph: "F", desc: "Repairs 4 HP/s, faster shield regen." },
+    { id: "ballast", name: "Ballast Weights", rarity: "common", kb: 0.35, wt: 5, glyph: "B", desc: "Heavy weights: much harder to shove." },
+    { id: "patch", name: "Patch Kit", rarity: "common", regen: 0.8, wt: 1, glyph: "P", desc: "Repairs 0.8 HP per second." },
+    { id: "coolant", name: "Coolant Loop", rarity: "rare", cdMul: 0.88, wt: 2, glyph: "C", desc: "Weapons recharge 12% faster." },
+    { id: "capacitor", name: "Shield Capacitor", rarity: "rare", shieldRegen: 1.45, wt: 1, glyph: "Q", desc: "Shields regenerate 45% faster." },
+    { id: "scanner", name: "Weak-Point Scanner", rarity: "epic", crit: 0.12, wt: 1, glyph: "S", desc: "12% chance to crit (x1.6)." },
+    { id: "lucky", name: "Lucky Bolt", rarity: "epic", luck: 0.2, wt: 0.5, glyph: "$", desc: "+20% credits from every fight (+2% per level)." },
+    { id: "afterburner", name: "Afterburner", rarity: "legendary", boost: 2.4, boostCd: 0.45, wt: 2, glyph: "X", desc: "Huge boost that recharges very fast." },
+    { id: "berserk", name: "Berserker Core", rarity: "legendary", dmgMul: 1.22, cdMul: 0.92, wt: 2, glyph: "R", desc: "+22% damage, weapons recharge 8% faster." }
   ].map((p) => ({ ...p, cat: "util" }));
   var PARTS = [...FRAMES, ...WHEELS, ...WEAPONS, ...ARMOR, ...SHIELDS, ...UTILS];
   var PART = Object.fromEntries(PARTS.map((p) => [p.id, p]));
@@ -692,7 +1016,10 @@
     "Going over your frame's weight capacity slows you down.",
     "Shields recharge if you avoid damage for a few seconds.",
     "Mag-Lev Pods float over spike strips and flame vents.",
-    "Buy duplicate cards to level parts up in the Garage.",
+    "Buy duplicate cards to level parts up in the Garage. Parts go all the way to Lv 10.",
+    "Quick Brawl is a great way to farm credits between series matches.",
+    "Tough brawl opponents pay out a lot more.",
+    "The Lucky Bolt utility boosts every credit payout.",
     "Rerolling the shop costs more each time. Spend wisely.",
     "If time runs out, the judges award the win on damage dealt.",
     "Boost to dodge a big hit or to slam into an enemy."
@@ -708,6 +1035,12 @@
     hex: [[1.05, 0], [0.52, -0.88], [-0.52, -0.88], [-1, 0], [-0.52, 0.88], [0.52, 0.88]],
     talon: [[1.25, 0], [0.22, -0.42], [-0.2, -1], [-0.72, -0.62], [-0.48, 0], [-0.72, 0.62], [-0.2, 1], [0.22, 0.42]],
     titan: [[1.12, 0], [0.72, -0.62], [0.1, -0.96], [-0.92, -0.86], [-0.68, 0], [-0.92, 0.86], [0.1, 0.96], [0.72, 0.62]],
+    scuttle: [[1, 0], [0.4, -0.62], [-0.7, -0.82], [-0.92, -0.3], [-0.92, 0.3], [-0.7, 0.82], [0.4, 0.62]],
+    ram: [[1, -0.4], [1, 0.4], [0.5, 0.88], [-0.85, 0.88], [-0.6, 0], [-0.85, -0.88], [0.5, -0.88]],
+    viper: [[1.3, 0], [0.5, -0.3], [-0.3, -0.75], [-1, -0.55], [-0.7, 0], [-1, 0.55], [-0.3, 0.75], [0.5, 0.3]],
+    bastion: [[1, 0.42], [1, -0.42], [0.45, -0.96], [-0.45, -0.96], [-1, -0.45], [-1, 0.45], [-0.45, 0.96], [0.45, 0.96]],
+    manta: [[1.15, 0], [0.3, -0.5], [-0.1, -1.1], [-0.55, -0.95], [-0.85, -0.2], [-0.85, 0.2], [-0.55, 0.95], [-0.1, 1.1], [0.3, 0.5]],
+    colossus: [[1.1, 0], [0.8, -0.5], [0.5, -0.96], [-0.3, -1], [-0.95, -0.72], [-0.75, 0], [-0.95, 0.72], [-0.3, 1], [0.5, 0.96], [0.8, 0.5]],
     phantom: [[1.35, 0], [0, -0.34], [-0.4, -1.05], [-0.56, -0.3], [-0.92, 0], [-0.56, 0.3], [-0.4, 1.05], [0, 0.34]]
   };
   var TEAM = {
@@ -724,7 +1057,12 @@
     ceramic: { fill: "#c9c2b3", edge: "#efe9dc" },
     composite: { fill: "#2f3b2f", edge: "#7fa07f" },
     neutron: { fill: "#2a2140", edge: "#a98bff", glow: "#8a6bff" },
-    reactive: { fill: "#4a2a1a", edge: "#ff9a3c", glow: "#ff7a1a" }
+    reactive: { fill: "#4a2a1a", edge: "#ff9a3c", glow: "#ff7a1a" },
+    scrap: { fill: "#4a3f33", edge: "#8a7a62" },
+    kevlar: { fill: "#3a3a22", edge: "#c8c27a" },
+    bulk: { fill: "#3c4450", edge: "#6f7b8c" },
+    mirror: { fill: "#9fb6c8", edge: "#f2fbff", glow: "#cfefff", spikes: true },
+    dragon: { fill: "#3a1220", edge: "#ff5a7a", glow: "#ff2a5a", spikes: true }
   };
   function poly(ctx2, pts, sx, sy = sx) {
     ctx2.beginPath();
@@ -2956,7 +3294,7 @@
       let cx = this.cam.x, cy = this.cam.y;
       cx = hw * 2 >= WORLD.w + 80 ? WORLD.w / 2 : clamp(cx, hw - 40, WORLD.w - hw + 40);
       cy = hh * 2 >= WORLD.h + 80 ? WORLD.h / 2 : clamp(cy, hh - 40, WORLD.h - hh + 40);
-      const sh = this.cam.shake;
+      const sh = this.cam.shake * (this.o.shake ?? 1);
       const sx = (Math.random() - 0.5) * sh, sy = (Math.random() - 0.5) * sh;
       ctx2.fillStyle = "#05070b";
       ctx2.fillRect(0, 0, w, h);
@@ -3160,7 +3498,8 @@
       shop: null,
       nextEnemy: null,
       tut: { match: false, shop: false, garage: false },
-      settings: { sound: true, haptics: true },
+      settings: { sound: true, haptics: true, music: true, sfxVol: 0.8, musicVol: 0.5, shake: true, difficulty: "normal" },
+      brawl: { offers: null, streak: 0, best: 0, wins: 0, played: 0 },
       stats: { wins: 0, losses: 0, kos: 0, pits: 0, matches: 0 },
       seed: Math.floor(Math.random() * 1e9)
     };
@@ -3171,7 +3510,7 @@
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const d = JSON.parse(raw);
-        S.data = { ...defaultSave(), ...d, settings: { ...defaultSave().settings, ...d.settings || {} }, tut: { ...defaultSave().tut, ...d.tut || {} }, stats: { ...defaultSave().stats, ...d.stats || {} } };
+        S.data = { ...defaultSave(), ...d, settings: { ...defaultSave().settings, ...d.settings || {} }, tut: { ...defaultSave().tut, ...d.tut || {} }, brawl: { ...defaultSave().brawl, ...d.brawl || {} }, stats: { ...defaultSave().stats, ...d.stats || {} } };
         sanitize();
         return S.data;
       }
@@ -3238,7 +3577,7 @@
     if (!it) return null;
     const p = PART[id];
     if (it.lvl >= MAX_LEVEL) return { max: true, lvl: it.lvl };
-    const need = it.lvl;
+    const need = Math.ceil(it.lvl / 2);
     const cost = Math.round(RARITY[p.rarity].price * 0.5 * it.lvl);
     return { max: false, lvl: it.lvl, copies: it.copies, need, cost, can: it.copies >= need && S.data.credits >= cost };
   }
@@ -3251,6 +3590,49 @@
     S.data.credits -= u.cost;
     save();
     return true;
+  }
+  var DIFFICULTY = {
+    easy: { name: "Easy", desc: "Slower, sloppier bots with weaker parts. Rewards x0.8.", mul: 0.55, add: -0.04, lvl: -1, reward: 0.8 },
+    normal: { name: "Normal", desc: "The intended challenge. Rewards x1.", mul: 1, add: 0, lvl: 0, reward: 1 },
+    hard: { name: "Hard", desc: "Sharper AI and upgraded enemy parts. Rewards x1.25.", mul: 1.12, add: 0.12, lvl: 1, reward: 1.25 },
+    brutal: { name: "Brutal", desc: "Ruthless AI, heavily upgraded parts. Rewards x1.5.", mul: 1.2, add: 0.25, lvl: 2, reward: 1.5 }
+  };
+  var difficulty = () => DIFFICULTY[S.data.settings.difficulty] || DIFFICULTY.normal;
+  function adjustEnemy(e) {
+    if (e.tutorial || e.dummy) return { levels: e.levels, diff: e.diff };
+    const D2 = difficulty();
+    const levels = {};
+    for (const [id, l] of Object.entries(e.levels || {})) levels[id] = Math.max(1, Math.min(MAX_LEVEL, l + D2.lvl));
+    for (const id of [e.build.frame, e.build.wheel, ...e.build.weapons, ...e.build.armor, e.build.shield, ...e.build.util]) if (id && !levels[id]) levels[id] = Math.max(1, 1 + D2.lvl);
+    return { levels, diff: Math.max(0.02, Math.min(1, (e.diff || 0) * D2.mul + D2.add)) };
+  }
+  function luckBonus() {
+    let l = 0;
+    for (const id of S.data.build.util || []) if (id && PART[id].luck) l += PART[id].luck + 0.02 * (lvl(id) - 1);
+    return l;
+  }
+  function devGiveAll() {
+    for (const p of PARTS) if (!S.data.inv[p.id]) S.data.inv[p.id] = { lvl: 1, copies: 0 };
+    save();
+  }
+  function devCredits(n) {
+    S.data.credits += n;
+    save();
+  }
+  function devMaxAll() {
+    for (const it of Object.values(S.data.inv)) {
+      it.lvl = MAX_LEVEL;
+      it.copies = 0;
+    }
+    save();
+  }
+  function devNextLeague() {
+    S.data.tut = { match: true, shop: true, garage: true };
+    if (S.data.league < LEAGUES.length) S.data.league++;
+    S.data.match = 0;
+    S.data.nextEnemy = null;
+    S.data.brawl.offers = null;
+    save();
   }
   function rng(seed) {
     let s = seed >>> 0 || 1;
@@ -3368,49 +3750,170 @@
       const boss = isBossMatch();
       const p = L.power + d.match / Math.max(1, L.matches) + (boss ? 1 : 0);
       const first = L.index === 0 && d.match === 1;
-      const w = L.rarity.slice();
-      if (boss) {
-        w[2] += 15;
-        w[3] += 10;
-      }
-      const roll = (cat, extra) => {
-        for (let k = 0; k < 20; k++) {
-          const rar = first ? "common" : rollRarity(r, w);
-          const pool = PARTS.filter((q) => q.cat === cat && q.rarity === rar && (!extra || extra(q)));
-          if (pool.length) return pick(r, pool).id;
-        }
-        return PARTS.find((q) => q.cat === cat && (!extra || extra(q))).id;
-      };
-      const build = { frame: first ? "dart" : roll("frame"), wheel: roll("wheel"), weapons: [], armor: [], shield: null, util: [] };
-      const F = PART[build.frame];
-      for (let i = 0; i < F.slots.weapon; i++) if (i === 0 || r() < 0.45 + 0.1 * p) build.weapons.push(roll("weapon", (q) => !build.weapons.includes(q.id)));
-      if (first) {
-        build.wheel = "rubber";
-        build.weapons = ["flipper"];
-        build.armor = ["bumpers"];
-      }
-      for (let i = 0; i < F.slots.armor; i++) if (i === 0 || r() < 0.5 + 0.1 * p) build.armor.push(roll("armor", (q) => !build.armor.includes(q.id)));
-      if (F.slots.shield && r() < 0.25 + 0.15 * p) build.shield = roll("shield");
-      for (let i = 0; i < F.slots.util; i++) if (r() < 0.2 + 0.15 * p) build.util.push(roll("util", (q) => !build.util.includes(q.id)));
-      const st = () => computeStats(build);
-      while (st().over > 0.12 && (build.util.length || build.armor.length > 1 || build.weapons.length > 1)) {
-        if (build.util.length) build.util.pop();
-        else if (build.armor.length > 1) build.armor.pop();
-        else build.weapons.pop();
-      }
-      const levels = {};
-      const maxL = Math.min(MAX_LEVEL, 1 + Math.floor(p * 0.8));
-      for (const id of [build.frame, build.wheel, ...build.weapons, ...build.armor, build.shield, ...build.util]) if (id) levels[id] = Math.max(1, Math.min(maxL, 1 + Math.floor(r() * (maxL + 0.5))));
-      const diff = Math.min(0.95, (first ? 0.08 : 0.16 + p * 0.15) + (boss ? 0.1 : 0));
-      e = { name: boss ? pick(r, BOT_NAMES).toUpperCase() : pick(r, BOT_NAMES), title: boss ? "Circuit Boss" : L.name, build, levels, diff, boss, team: boss ? "boss" : "enemy" };
+      e = genBot(r, p, { boss, first, rarity: L.rarity, title: boss ? "Circuit Boss" : L.name });
     }
     fitBuild(e.build);
     d.nextEnemy = e;
     save();
     return e;
   }
+  function genBot(r, p, o = {}) {
+    const { boss = false, first = false } = o;
+    const w = (o.rarity || [60, 30, 9, 1]).slice();
+    if (boss) {
+      w[2] += 15;
+      w[3] += 10;
+    }
+    const roll = (cat, extra) => {
+      for (let k = 0; k < 20; k++) {
+        const rar = first ? "common" : rollRarity(r, w);
+        const pool = PARTS.filter((q) => q.cat === cat && q.rarity === rar && (!extra || extra(q)));
+        if (pool.length) return pick(r, pool).id;
+      }
+      return PARTS.find((q) => q.cat === cat && (!extra || extra(q))).id;
+    };
+    const build = { frame: first ? "dart" : roll("frame"), wheel: roll("wheel"), weapons: [], armor: [], shield: null, util: [] };
+    const F = PART[build.frame];
+    for (let i = 0; i < F.slots.weapon; i++) if (i === 0 || r() < 0.45 + 0.1 * p) build.weapons.push(roll("weapon", (q) => !build.weapons.includes(q.id)));
+    if (first) {
+      build.wheel = "rubber";
+      build.weapons = ["flipper"];
+      build.armor = ["bumpers"];
+    }
+    for (let i = 0; i < F.slots.armor; i++) if (i === 0 || r() < 0.5 + 0.1 * p) build.armor.push(roll("armor", (q) => !build.armor.includes(q.id)));
+    if (F.slots.shield && r() < 0.25 + 0.15 * p) build.shield = roll("shield");
+    for (let i = 0; i < F.slots.util; i++) if (r() < 0.2 + 0.15 * p) build.util.push(roll("util", (q) => !build.util.includes(q.id) && !q.luck));
+    const st = () => computeStats(build);
+    while (st().over > 0.12 && (build.util.length || build.armor.length > 1 || build.weapons.length > 1)) {
+      if (build.util.length) build.util.pop();
+      else if (build.armor.length > 1) build.armor.pop();
+      else build.weapons.pop();
+    }
+    const levels = {};
+    const maxL = Math.max(1, Math.min(MAX_LEVEL, 1 + Math.floor(p * 0.8)));
+    for (const id of [build.frame, build.wheel, ...build.weapons, ...build.armor, build.shield, ...build.util]) if (id) levels[id] = Math.max(1, Math.min(maxL, 1 + Math.floor(r() * (maxL + 0.5))));
+    const diff = Math.min(0.95, (first ? 0.08 : 0.16 + p * 0.15) + (boss ? 0.1 : 0));
+    const e = { name: boss ? pick(r, BOT_NAMES).toUpperCase() : pick(r, BOT_NAMES), title: o.title || "", build, levels, diff, boss, team: boss ? "boss" : "enemy" };
+    fitBuild(e.build);
+    return e;
+  }
+  var BRAWL_TIERS = [
+    { key: "easy", name: "Warm-up", dp: -0.7, mult: 0.55, drop: 0.12, color: "#5be38a" },
+    { key: "even", name: "Even Match", dp: 0, mult: 1, drop: 0.22, color: "#3ff0ff" },
+    { key: "tough", name: "Tough", dp: 0.9, mult: 1.75, drop: 0.4, color: "#ff4d7a" }
+  ];
+  function unlockedArenas() {
+    const ids = ["yard"];
+    for (let i = 0; i <= Math.min(S.data.league, LEAGUES.length - 1); i++) if (!ids.includes(LEAGUES[i].arena)) ids.push(LEAGUES[i].arena);
+    if (S.data.league >= LEAGUES.length) {
+      for (const a of PRO.arenas) if (!ids.includes(a)) ids.push(a);
+    }
+    return ids.filter((a) => ARENAS[a]);
+  }
+  function brawlOffers() {
+    const d = S.data;
+    if (d.brawl.offers) return d.brawl.offers;
+    const L = currentLeague();
+    const r = rng(d.seed ^ d.brawl.played * 2654435761 ^ Date.now() & 65535);
+    const arenas = unlockedArenas();
+    const baseP = L.power + (L.pro ? 0 : d.match / Math.max(1, L.matches)) + 0.2;
+    d.brawl.offers = BRAWL_TIERS.map((t) => {
+      const p = Math.max(0, baseP + t.dp);
+      const e = genBot(r, p, { rarity: L.rarity, title: `${t.name} brawl`, first: L.index === 0 && t.key === "easy" && p < 0.3 });
+      if (t.key === "tough") {
+        e.team = "boss";
+        e.diff = Math.min(0.95, e.diff + 0.06);
+      }
+      return { tier: t.key, enemy: e, arena: pick(r, arenas), reward: Math.round(L.reward * 0.6 * t.mult / 5) * 5 };
+    });
+    save();
+    return d.brawl.offers;
+  }
+  function rerollBrawl() {
+    S.data.brawl.offers = null;
+    S.data.brawl.played++;
+    return brawlOffers();
+  }
+  function dropPart(rarityWeights, r) {
+    const rar = rollRarity(r, rarityWeights);
+    const pool = PARTS.filter((p2) => p2.rarity === rar);
+    const p = pick(r, pool);
+    const inv = S.data.inv;
+    if (inv[p.id]) inv[p.id].copies++;
+    else inv[p.id] = { lvl: 1, copies: 0 };
+    return p.id;
+  }
+  function applyBrawl(res, offer) {
+    const d = S.data, L = currentLeague(), Dm = difficulty();
+    const T = BRAWL_TIERS.find((t) => t.key === offer.tier) || BRAWL_TIERS[1];
+    const out = { credits: 0, xp: 0, lines: [], leagueUp: null, levelUp: null, drop: null, brawl: true };
+    const before = pilotLevel();
+    d.stats.matches++;
+    d.brawl.played++;
+    if (res.win) {
+      d.stats.wins++;
+      d.brawl.wins++;
+      if (res.how === "ko") d.stats.kos++;
+      if (res.how === "pit") d.stats.pits++;
+      d.brawl.streak++;
+      d.brawl.best = Math.max(d.brawl.best, d.brawl.streak);
+      out.lines.push([`${T.name} win`, offer.reward]);
+      out.credits += offer.reward;
+      if (res.how === "ko" || res.how === "pit") {
+        const b = Math.round(offer.reward * 0.25);
+        out.lines.push([res.how === "pit" ? "Pit bonus" : "Knockout bonus", b]);
+        out.credits += b;
+      }
+      if (d.brawl.streak > 1) {
+        const b = Math.round(offer.reward * Math.min(0.5, 0.1 * (d.brawl.streak - 1)));
+        out.lines.push([`Win streak x${d.brawl.streak}`, b]);
+        out.credits += b;
+      }
+      const r = rng(d.seed + d.stats.matches * 131);
+      if (r() < T.drop) {
+        out.drop = dropPart(L.rarity, r);
+      }
+      out.xp = 20 + L.index * 6 + (T.key === "tough" ? 15 : 0);
+    } else {
+      d.stats.losses++;
+      d.brawl.streak = 0;
+      const c = Math.round(offer.reward * 0.25);
+      out.lines.push(["Appearance fee", c]);
+      out.credits += c;
+      out.xp = 8;
+    }
+    finishRewards(out, before, Dm);
+    d.brawl.offers = null;
+    dealShop();
+    save();
+    return out;
+  }
+  function finishRewards(out, before, Dm) {
+    const d = S.data;
+    const base = out.credits;
+    if (Dm.reward !== 1 && base) {
+      const b = Math.round(base * (Dm.reward - 1));
+      out.lines.push([`${Dm.name} difficulty`, b]);
+      out.credits += b;
+    }
+    const lk = luckBonus();
+    if (lk > 0 && base) {
+      const b = Math.round(base * lk);
+      out.lines.push(["Lucky Bolt", b]);
+      out.credits += b;
+    }
+    d.credits += out.credits;
+    d.xp += out.xp;
+    const after = pilotLevel();
+    if (after > before) {
+      const b = 40 * after;
+      d.credits += b;
+      out.levelUp = { level: after, bonus: b };
+    }
+  }
   var pilotLevel = (xp = S.data.xp) => Math.floor(Math.sqrt(xp / 60)) + 1;
-  function applyResult(res) {
+  function applyResult(res, mode, offer) {
+    if (mode === "brawl") return applyBrawl(res, offer);
     const d = S.data, L = currentLeague();
     const boss = isBossMatch();
     const out = { credits: 0, xp: 0, lines: [], leagueUp: null, levelUp: null };
@@ -3461,15 +3964,12 @@
       out.credits += c;
       out.xp = 15;
     }
-    d.credits += out.credits;
-    d.xp += out.xp;
-    const after = pilotLevel();
-    if (after > before) {
-      const b = 40 * after;
-      d.credits += b;
-      out.levelUp = { level: after, bonus: b };
-    }
+    if (res.tutorial) {
+      d.credits += out.credits;
+      d.xp += out.xp;
+    } else finishRewards(out, before, difficulty());
     d.nextEnemy = null;
+    d.brawl.offers = null;
     if (res.tutorial) dealShop(["brick", "knobby", "hammer", "bumpers", "nitro"]);
     else dealShop();
     save();
@@ -3479,9 +3979,11 @@
   // js/audio.js
   var ac = null;
   var master = null;
+  var sfxBus = null;
+  var musicBus = null;
   var noiseBuf = null;
   var hum = null;
-  var Sfx = { enabled: true };
+  var Sfx = { enabled: true, vol: 0.8, music: true, musicVol: 0.5 };
   var last = {};
   function initAudio() {
     if (ac) {
@@ -3490,15 +3992,27 @@
     }
     try {
       ac = new (window.AudioContext || window.webkitAudioContext)();
-      master = ac.createGain();
-      master.gain.value = 0.5;
-      master.connect(ac.destination);
+      const out = ac.createGain();
+      out.gain.value = 0.9;
+      out.connect(ac.destination);
+      sfxBus = ac.createGain();
+      sfxBus.connect(out);
+      musicBus = ac.createGain();
+      musicBus.connect(out);
+      master = sfxBus;
+      applyVolumes();
       noiseBuf = ac.createBuffer(1, ac.sampleRate * 1, ac.sampleRate);
       const d = noiseBuf.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     } catch (e) {
       ac = null;
     }
+  }
+  function applyVolumes() {
+    if (!ac) return;
+    const t = ac.currentTime;
+    sfxBus.gain.setTargetAtTime(Sfx.enabled ? 0.55 * Sfx.vol : 0, t, 0.05);
+    musicBus.gain.setTargetAtTime(Sfx.music ? 0.32 * Sfx.musicVol : 0, t, 0.3);
   }
   function env(g, t, a, peak, dcy) {
     g.gain.setValueAtTime(1e-4, t);
@@ -3683,6 +4197,101 @@
     } catch (e) {
     }
   }
+  var CHORDS = [
+    // semitones from A2 (110 Hz)
+    [0, 7, 12, 15, 19],
+    // Am9-ish
+    [-4, 3, 8, 12, 15],
+    // Fmaj7
+    [3, 10, 15, 19, 22],
+    // Cmaj7
+    [-2, 5, 10, 14, 17]
+    // G6
+  ];
+  var hz = (st) => 110 * Math.pow(2, st / 12);
+  var Music = { mode: null, timer: null, step: 0, next: 0, verb: null };
+  function musicVerb() {
+    if (Music.verb) return Music.verb;
+    const len = ac.sampleRate * 2.6;
+    const ir = ac.createBuffer(2, len, ac.sampleRate);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+    }
+    const cv2 = ac.createConvolver();
+    cv2.buffer = ir;
+    const wet = ac.createGain();
+    wet.gain.value = 0.55;
+    cv2.connect(wet);
+    wet.connect(musicBus);
+    Music.verb = cv2;
+    return cv2;
+  }
+  function mNote(type, f, t, dur, vol, cutoff = 1800, verb = true) {
+    const o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter();
+    o.type = type;
+    o.frequency.value = f;
+    fl.type = "lowpass";
+    fl.frequency.value = cutoff;
+    g.gain.setValueAtTime(1e-4, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.6, dur * 0.3));
+    g.gain.exponentialRampToValueAtTime(1e-4, t + dur);
+    o.connect(fl);
+    fl.connect(g);
+    g.connect(musicBus);
+    if (verb) g.connect(musicVerb());
+    o.start(t);
+    o.stop(t + dur + 0.1);
+  }
+  function mHat(t, vol) {
+    const s = ac.createBufferSource();
+    s.buffer = noiseBuf;
+    const f = ac.createBiquadFilter();
+    f.type = "highpass";
+    f.frequency.value = 7e3;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(1e-4, t + 0.05);
+    s.connect(f);
+    f.connect(g);
+    g.connect(musicBus);
+    s.start(t, Math.random() * 0.5);
+    s.stop(t + 0.08);
+  }
+  function schedule() {
+    if (!ac || !Music.mode) return;
+    const battle = Music.mode === "battle";
+    const beat = battle ? 0.25 : 0.42;
+    while (Music.next < ac.currentTime + 0.4) {
+      const t = Music.next, st = Music.step;
+      const chord = CHORDS[Math.floor(st / 16) % CHORDS.length];
+      if (st % 16 === 0) for (const n of chord.slice(0, 4)) {
+        mNote("sine", hz(n), t, beat * 17, 0.05);
+        mNote("triangle", hz(n) * 1.003, t, beat * 17, 0.025, 900);
+      }
+      const arp = [0, 2, 1, 3, 4, 2, 3, 1];
+      if (battle || st % 2 === 0) mNote("triangle", hz(chord[arp[st % 8]] + 12), t, beat * 2.2, battle ? 0.035 : 0.045, 2600);
+      if (battle) {
+        if (st % 2 === 0) mNote("sawtooth", hz(chord[0] - 12), t, beat * 0.9, 0.05, 420, false);
+        if (st % 2 === 1) mHat(t, 0.025);
+        if (st % 8 === 4) mHat(t, 0.045);
+      }
+      Music.step++;
+      Music.next += beat;
+    }
+  }
+  function setMusic(mode) {
+    if (!ac) return;
+    if (mode === Music.mode) return;
+    Music.mode = mode;
+    clearInterval(Music.timer);
+    Music.timer = null;
+    if (!mode) return;
+    Music.next = Math.max(Music.next, ac.currentTime + 0.1);
+    Music.step = Math.floor(Music.step / 16) * 16;
+    Music.timer = setInterval(schedule, 120);
+    schedule();
+  }
 
   // js/ui.js
   var $ = (s, r = document) => r.querySelector(s);
@@ -3699,14 +4308,37 @@
     touchStick: false,
     installPrompt: null,
     version: "",
-    paused: false
+    paused: false,
+    fight: null,
+    attract: null,
+    audioOn: false
   };
+  var ICON = {
+    play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>',
+    brawl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 4l11 11M15 15l2.5-1M15 15l-1 2.5M20 4L9 15M9 15l-2.5-1M9 15l1 2.5M5 19l2.5-2.5M19 19l-2.5-2.5"/></svg>',
+    garage: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.6-.4-.4-2.6z"/></svg>',
+    shop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="10" height="14" rx="2" transform="rotate(-10 8 13)"/><rect x="10" y="4" width="10" height="14" rx="2" transform="rotate(8 15 11)" fill="rgba(0,0,0,.35)"/></svg>'
+  };
+  function applyAudioSettings() {
+    const s = D().settings;
+    Sfx.enabled = s.sound;
+    Sfx.vol = s.sfxVol ?? 0.8;
+    Sfx.music = s.music;
+    Sfx.musicVol = s.musicVol ?? 0.5;
+    applyVolumes();
+  }
+  function syncMusic() {
+    if (UI.audioOn) setMusic(UI.screen === "hud" ? "battle" : "menu");
+  }
   function show(name) {
     for (const s of $$(".screen")) s.classList.toggle("active", s.id === "scr-" + name);
     UI.screen = name;
     UI.previews = UI.previews.filter((p) => document.body.contains(p.canvas) && p.canvas.closest(".screen.active, .sheet, .modal"));
     document.body.classList.toggle("in-match", name === "hud");
+    if (name === "title") startAttract();
+    else stopAttract();
     hideCoach();
+    syncMusic();
   }
   var toastT = 0;
   function toast(msg, ms = 2200) {
@@ -3831,9 +4463,14 @@
     let build, team = "player";
     if (p.kind === "player") build = D().build;
     else if (p.kind === "enemy") {
-      const e = nextEnemy();
+      const e = UI.fight ? UI.fight.enemy : nextEnemy();
       build = e.build;
       team = e.team || "enemy";
+    } else if (p.kind.startsWith("offer:")) {
+      const o = (D().brawl.offers || [])[+p.kind.slice(6)];
+      if (!o) return;
+      build = o.enemy.build;
+      team = o.enemy.team || "enemy";
     } else return;
     const F = PART[build.frame];
     const r = Math.min(w, h) * 0.21 * (0.85 + 0.15 * F.size);
@@ -3846,29 +4483,113 @@
     drawBot(g, botView(build, team, w / 2, h / 2, r, a, t));
   }
   function menuFrame(t) {
+    if (UI.attract && UI.screen === "title") {
+      const a = UI.attract;
+      const dt = a.t == null ? 1 / 60 : Math.min(0.05, Math.max(0, t - a.t));
+      a.t = t;
+      a.m.update(dt);
+      if (a.m.state === "over") {
+        a.endT += dt;
+        if (a.endT > 2.2) {
+          UI.attract = null;
+          startAttract();
+          return;
+        }
+      }
+      const c = $("#cv"), g = c.getContext("2d"), dpr = UI.dpr || 1;
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      a.m.draw(g, window.innerWidth, window.innerHeight);
+    }
     for (const p of UI.previews) if (p.canvas.isConnected && p.canvas.offsetParent !== null) drawPreview(p, t);
+  }
+  function startAttract() {
+    document.body.classList.add("attract");
+    if (UI.attract) return;
+    try {
+      const d = D();
+      const L = currentLeague();
+      const r = rng((Date.now() & 16777215) + 11);
+      const arenas = unlockedArenas().filter((a) => ARENAS[a]);
+      const arena = arenas[Math.floor(r() * arenas.length)] || "yard";
+      const p = Math.max(0.6, L.power + 0.6);
+      const foe = genBot(r, p, { rarity: L.rarity });
+      const mine = d.tut.match ? { build: JSON.parse(JSON.stringify(d.build)), levels: levelsMap() } : (() => {
+        const b = genBot(r, p, { rarity: L.rarity });
+        return { build: b.build, levels: b.levels };
+      })();
+      if (!mine.build.weapons.some(Boolean)) {
+        const b = genBot(r, p, { rarity: L.rarity });
+        mine.build = b.build;
+        mine.levels = b.levels;
+      }
+      const m = new Match({
+        arena,
+        duration: 50,
+        shake: 0.2,
+        player: { ...mine, ai: 0.72 },
+        enemy: { build: foe.build, levels: foe.levels, diff: 0.68, name: foe.name, team: foe.team },
+        onEvent: () => {
+        }
+      });
+      m.start();
+      UI.attract = { m, t: null, endT: 0 };
+    } catch (e) {
+      console.warn("attract failed", e);
+      UI.attract = null;
+    }
+  }
+  function stopAttract() {
+    document.body.classList.remove("attract");
+    if (!UI.attract) return;
+    UI.attract = null;
+    if (!UI.match) {
+      const g = $("#cv").getContext("2d");
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, 99999, 99999);
+    }
   }
   function renderTitle() {
     const el = $("#scr-title");
+    const d = D();
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
     const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const canInstall = !standalone && (UI.installPrompt || ios);
+    const started = d.tut.match;
+    const L = currentLeague();
+    const prog = started ? `${L.name} \xB7 ${L.pro ? `Pro wins ${d.proWins}` : `Match ${Math.min(d.match + 1, L.matches)} of ${L.matches}`}` : "Learn to drive and fight in about a minute";
+    const brawlSub = !started ? "Unlocks after training" : d.brawl.streak > 1 ? `Win streak x${d.brawl.streak}, keep it going!` : "Random fights for credits and part drops";
     el.innerHTML = `
-    <div>
-      <canvas class="title-bot" data-preview="player"></canvas>
-      <div class="logo">Cursor<span>Bots</span></div>
-      <div class="tagline">Build. Upgrade. Destroy.</div>
-      <div class="title-actions">
-        <button class="btn primary big" data-act="play">${D().tut.match ? "Continue" : "Play"}</button>
-        ${!standalone && (UI.installPrompt || ios) ? `<button class="btn" data-act="install">Install App</button>` : ""}
+    <div class="title-wrap">
+      <div class="title-hero">
+        <div class="logo">Cursor<span>Bots</span></div>
+        <div class="tagline">Build. Upgrade. Destroy.</div>
+      </div>
+      ${started ? `<div class="title-stats">
+        <div><b>${pilotLevel()}</b><span>Pilot Lv</span></div>
+        <div><b>${coin}${d.credits}</b><span>Credits</span></div>
+        <div><b>${Object.keys(d.inv).length}<small>/${PARTS.length}</small></b><span>Parts</span></div>
+        <div><b>${d.stats.wins}</b><span>Wins</span></div>
+      </div>` : ""}
+      <div class="menu">
+        <button class="mbtn primary" data-act="play"><span class="mi">${ICON.play}</span><span class="mt"><b>${started ? "Continue Series" : "Start Training"}</b><small>${esc(prog)}</small></span></button>
+        <button class="mbtn" data-act="brawl" ${started ? "" : "disabled"}><span class="mi">${ICON.brawl}</span><span class="mt"><b>Quick Brawl</b><small>${esc(brawlSub)}</small></span></button>
         <div class="grid2">
-          <button class="btn ghost" data-act="settings">Settings</button>
-          <button class="btn ghost" data-act="credits">Credits</button>
+          <button class="mbtn sm" data-act="garage" ${started ? "" : "disabled"}><span class="mi">${ICON.garage}</span><b>Garage</b></button>
+          <button class="mbtn sm" data-act="shop" ${started ? "" : "disabled"}><span class="mi">${ICON.shop}</span><b>Workshop</b>${d.shop && d.shop.fresh ? '<span class="badge">NEW</span>' : ""}</button>
+        </div>
+        <div class="menu-foot">
+          <button class="btn ghost small" data-act="settings">Settings</button>
+          ${canInstall ? '<button class="btn ghost small" data-act="install">Install app</button>' : ""}
+          <button class="btn ghost small" data-act="credits">Credits</button>
         </div>
       </div>
     </div>
-    <div class="ver">v${esc(UI.version || "")}</div>`;
+    <div class="ver">v${esc(UI.version || "")} \xB7 ${esc(difficulty().name)} AI</div>`;
     bind(el, {
       play: () => renderHub(),
+      brawl: () => renderBrawl(),
+      garage: () => renderGarage(),
+      shop: () => renderShop(),
       install: () => doInstall(),
       settings: () => openSettings(),
       credits: () => openCredits()
@@ -3900,6 +4621,9 @@
     <div class="pill">${coin}<span data-credits>${D().credits}</span></div>
     <button class="icon-btn" data-act="settings" aria-label="Settings">&#9881;</button>
   </div>`;
+  }
+  function refreshCredits() {
+    for (const e of $$("[data-credits]")) e.textContent = D().credits;
   }
   function renderHub() {
     const d = D();
@@ -3951,8 +4675,9 @@
         <div class="xpbar"><i style="width:${xpPct}%"></i></div>
       </div>
     </div>
-    <div class="hub-actions">
-      <button class="btn ${boss ? "gold" : "primary"} big fight" data-act="fight">${tutorial ? "Start Tutorial" : boss ? "Boss Fight" : "Fight"}</button>
+    <div class="hub-actions three">
+      <button class="btn ${boss ? "gold" : "primary"} big fight" data-act="fight">${tutorial ? "Start Tutorial" : boss ? "Boss Fight" : "Series Fight"}</button>
+      <button class="btn" data-act="brawl" ${tutorial ? "disabled" : ""}>Brawl${d.brawl.streak > 1 ? `<span class="badge">x${d.brawl.streak}</span>` : ""}</button>
       <button class="btn" data-act="garage" ${tutorial ? "disabled" : ""}>Garage</button>
       <button class="btn" data-act="shop" ${tutorial ? "disabled" : ""}>Workshop${shopFresh ? '<span class="badge">NEW</span>' : ""}</button>
     </div>
@@ -3962,7 +4687,8 @@
       settings: () => openSettings(),
       fight: () => renderVS(),
       garage: () => renderGarage(),
-      shop: () => renderShop()
+      shop: () => renderShop(),
+      brawl: () => renderBrawl()
     });
     show("hub");
     registerPreviews(el);
@@ -4067,7 +4793,7 @@
     sheet(`<div class="row" style="margin-bottom:10px"><h2>${CATS[cat]}${cat === "wheel" ? " (fills every wheel slot)" : ""}</h2><span class="spacer"></span><div class="pill">${coin}<span data-credits>${d.credits}</span></div><button class="icon-btn" data-act="close">&times;</button></div>
     ${canEmpty && current ? `<button class="btn small block ghost" style="margin-bottom:8px" data-act="empty">Unequip</button>` : ""}
     ${items || `<p class="muted">You don't own any parts of this type yet. Buy them in the Workshop.</p>`}
-    <p class="small muted">Buy duplicate cards in the Workshop to collect copies and level parts up (+12% stats per level, max Lv ${MAX_LEVEL}).</p>`, (s) => bind(s, {
+    <p class="small muted">Buy duplicate cards in the Workshop to collect copies and level parts up (+12% stats per level, max Lv ${MAX_LEVEL}). Higher levels need more copies and credits.</p>`, (s) => bind(s, {
       close: closeSheet,
       equip: (id) => {
         equip(cat, slot, id);
@@ -4174,41 +4900,110 @@
   function vibrateIf(ms) {
     if (D().settings.haptics) vibrate(ms);
   }
-  function renderVS() {
+  function seriesFight() {
     const e = nextEnemy();
     const L = currentLeague();
+    return { mode: "series", enemy: e, arena: e.tutorial ? "tutorial" : L.arena };
+  }
+  function renderVS(fight) {
+    if (!fight || !fight.enemy) fight = seriesFight();
+    UI.fight = fight;
+    const e = fight.enemy;
+    const Dm = difficulty();
+    const adj = adjustEnemy(e);
     const ps = playerStats();
-    const es = computeStats(e.build, (id) => e.levels[id] || 1);
-    const arenaId = e.tutorial ? "tutorial" : L.arena;
+    const es = computeStats(e.build, (id) => adj.levels[id] || 1);
+    const arenaId = fight.arena;
     const haz = hazardList(ARENAS[arenaId]);
     const tip = e.tutorial ? "This is a training match. Nothing can go wrong!" : TIPS[(D().stats.matches * 3 + 1) % TIPS.length];
+    const brawl = fight.mode === "brawl";
     const el = $("#scr-vs");
     el.innerHTML = `<div style="width:100%"><div class="vs" style="margin:0 auto">
       <div class="side"><canvas data-preview="player" data-spin="0"></canvas><div class="bname" style="color:var(--accent)">You</div><div class="small muted">Power ${powerRating(ps)} \xB7 HP ${ps.hp}</div></div>
       <div class="vsx">VS</div>
-      <div class="side"><canvas data-preview="enemy" data-spin="0" data-mirror="1"></canvas><div class="bname" style="color:${e.boss ? "var(--gold)" : "var(--hot)"}">${esc(e.name)}</div><div class="small muted">${esc(e.title || "")} \xB7 Power ${powerRating(es)} \xB7 HP ${es.hp}</div></div>
+      <div class="side"><canvas data-preview="enemy" data-spin="0" data-mirror="1"></canvas><div class="bname" style="color:${e.team === "boss" ? "var(--gold)" : "var(--hot)"}">${esc(e.name)}</div><div class="small muted">${esc(e.title || "")} \xB7 Power ${powerRating(es)} \xB7 HP ${es.hp}</div></div>
     </div>
-    <div class="chips"><span class="chip">${ARENAS[arenaId].name}</span>${haz.map((h) => `<span class="chip danger">${h}</span>`).join("")}</div>
+    <div class="chips">${brawl ? `<span class="chip gold">${coin} ${Math.round(fight.offer.reward * Dm.reward)} purse</span>` : ""}<span class="chip">${ARENAS[arenaId].name}</span>${!e.tutorial && Dm !== DIFFICULTY.normal ? `<span class="chip">${Dm.name} AI</span>` : ""}${haz.map((h) => `<span class="chip danger">${h}</span>`).join("")}</div>
     <div class="tip">${esc(tip)}</div>
-    <div class="row" style="justify-content:center;margin-top:16px;gap:12px"><button class="btn ghost" data-act="back">Back</button><button class="btn ${e.boss ? "gold" : "hot"} big" data-act="go">${e.tutorial ? "Begin" : "Fight!"}</button></div>
+    <div class="row" style="justify-content:center;margin-top:16px;gap:12px"><button class="btn ghost" data-act="back">Back</button><button class="btn ${e.team === "boss" ? "gold" : "hot"} big" data-act="go">${e.tutorial ? "Begin" : "Fight!"}</button></div>
   </div>`;
-    bind(el, { back: () => renderHub(), go: () => startMatch() });
+    bind(el, { back: () => {
+      UI.fight = null;
+      if (brawl) renderBrawl();
+      else renderHub();
+    }, go: () => startMatch() });
     show("vs");
+    registerPreviews(el);
+  }
+  var BRAWL_REROLL = 10;
+  function renderBrawl() {
+    const d = D();
+    const offers = brawlOffers();
+    const Dm = difficulty();
+    const pp = powerRating(playerStats());
+    const cards = offers.map((o, i) => {
+      const T = BRAWL_TIERS.find((t) => t.key === o.tier);
+      const adj = adjustEnemy(o.enemy);
+      const es = computeStats(o.enemy.build, (id) => adj.levels[id] || 1);
+      const ep = powerRating(es);
+      const rel = ep / Math.max(1, pp);
+      const relTxt = rel > 1.15 ? ["stronger", "var(--hot)"] : rel < 0.88 ? ["weaker", "var(--ok)"] : ["evenly matched", "var(--muted)"];
+      return `<div class="bcard" style="--tc:${T.color}">
+      <div class="bhead"><span class="btier">${T.name}</span><span class="spacer"></span><span class="pill">${coin}${Math.round(o.reward * Dm.reward)}</span></div>
+      <canvas data-preview="offer:${i}" data-spin="0" data-mirror="1"></canvas>
+      <div class="bname">${esc(o.enemy.name)}</div>
+      <div class="small muted">Power ${ep} <span style="color:${relTxt[1]}">(${relTxt[0]})</span> \xB7 HP ${es.hp}</div>
+      <div class="chips left"><span class="chip">${ARENAS[o.arena].name}</span><span class="chip">${Math.round(T.drop * 100)}% part drop</span></div>
+      <button class="btn block ${o.tier === "tough" ? "hot" : o.tier === "even" ? "primary" : ""}" data-act="go" data-arg="${i}">Fight</button>
+    </div>`;
+    }).join("");
+    const el = $("#scr-brawl");
+    el.innerHTML = `<div class="wrap">
+    ${topbar("Quick Brawl", "back")}
+    <div class="panel brawl-intro">
+      <div><b>Side fights for credits and parts.</b><div class="small muted">Brawls never affect your series. Win in a row for a streak bonus (up to +50%), and winners sometimes salvage a free part.</div></div>
+      <div class="streaks"><div class="streak"><b>${d.brawl.streak}</b><span>Streak</span></div><div class="streak"><b>${d.brawl.best}</b><span>Best</span></div><div class="streak"><b>${d.brawl.wins}</b><span>Won</span></div></div>
+    </div>
+    <div class="bcards">${cards}</div>
+    <div class="hub-actions"><button class="btn" data-act="reroll" ${d.credits < BRAWL_REROLL ? "disabled" : ""}>New rivals &middot; ${coin} ${BRAWL_REROLL}</button><button class="btn" data-act="garage">Garage</button></div>
+  </div>`;
+    bind(el, {
+      back: () => renderHub(),
+      settings: () => openSettings(),
+      garage: () => renderGarage(),
+      reroll: () => {
+        if (d.credits < BRAWL_REROLL) {
+          play("error");
+          return;
+        }
+        d.credits -= BRAWL_REROLL;
+        rerollBrawl();
+        play("deal");
+        renderBrawl();
+      },
+      go: (i) => {
+        const o = offers[+i];
+        renderVS({ mode: "brawl", enemy: o.enemy, arena: o.arena, offer: o });
+      }
+    });
+    show("brawl");
     registerPreviews(el);
   }
   function startMatch() {
     initAudio();
     const d = D();
-    const e = nextEnemy();
-    const L = currentLeague();
-    const arena = e.tutorial ? "tutorial" : L.arena;
+    if (!UI.fight) UI.fight = seriesFight();
+    const e = UI.fight.enemy;
+    const arena = UI.fight.arena;
+    const adj = adjustEnemy(e);
     UI.input = { x: 0, y: 0, mag: 0, fire: [false, false, false], boost: false };
     const m = new Match({
       arena,
       tutorial: !!e.tutorial,
       player: { build: JSON.parse(JSON.stringify(d.build)), levels: levelsMap() },
-      enemy: { build: e.build, levels: e.levels, diff: e.diff, name: e.name, dummy: e.dummy, team: e.team },
-      onEvent: onMatchEvent
+      enemy: { build: e.build, levels: adj.levels, diff: adj.diff, name: e.name, dummy: e.dummy, team: e.team },
+      onEvent: onMatchEvent,
+      shake: d.settings.shake === false ? 0 : 1
     });
     UI.match = m;
     UI.paused = false;
@@ -4470,9 +5265,11 @@
     const m = UI.match;
     UI.match = null;
     UI.hud = null;
-    const enemy = nextEnemy();
+    const f = UI.fight || seriesFight();
+    UI.fight = null;
+    const enemy = f.enemy;
     const L = currentLeague();
-    const out = applyResult(res);
+    const out = applyResult(res, f.mode, f.offer);
     renderResult(res, out, enemy, L);
     const g = $("#cv").getContext("2d");
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -4487,23 +5284,27 @@
     <div class="big ${res.win ? "win" : "lose"}">${res.tutorial ? "Trained!" : res.win ? "Victory" : "Defeat"}</div>
     <div class="muted">${res.tutorial ? "You're ready for the arena." : `${how} vs <b>${esc(enemy.name)}</b>`}</div>
     ${out.leagueUp ? `<div class="announce">&#127942; ${esc(L.name)} cleared! Unlocked: ${esc(out.leagueUp)}</div>` : ""}
+    ${out.drop ? `<div class="announce drop r-${PART[out.drop].rarity}"><canvas data-icon="${out.drop}"></canvas><span>Salvaged a part!<br><b>${esc(PART[out.drop].name)}</b> <span class="rtag">${RARITY[PART[out.drop].rarity].name}</span></span></div>` : ""}
     ${out.levelUp ? `<div class="announce" style="border-color:var(--accent);color:var(--accent);background:rgba(63,240,255,.08)">Pilot level ${out.levelUp.level}!</div>` : ""}
     <div class="rlines">
       ${res.tutorial ? "" : `<div class="rline"><span class="muted">Damage dealt / taken</span><span>${res.dmgDealt} / ${res.dmgTaken ?? "-"}</span></div>`}
-      ${out.lines.map((l, i) => `<div class="rline" style="animation-delay:${0.15 + i * 0.12}s"><span>${esc(l[0])}</span><span>${coin} +${l[1]}</span></div>`).join("")}
+      ${out.lines.map((l, i) => `<div class="rline" style="animation-delay:${0.15 + i * 0.12}s"><span>${esc(l[0])}</span><span>${coin} ${l[1] < 0 ? "&minus;" : "+"}${Math.abs(l[1])}</span></div>`).join("")}
       ${out.levelUp ? `<div class="rline"><span>Level-up bonus</span><span>${coin} +${out.levelUp.bonus}</span></div>` : ""}
       <div class="rline total" style="animation-delay:${0.2 + out.lines.length * 0.12}s"><span>Total</span><span>${coin} +${total}</span></div>
       <div class="rline"><span class="muted">Pilot XP</span><span>+${out.xp}</span></div>
     </div>
-    <div class="grid2"><button class="btn" data-act="hub">Hub</button><button class="btn primary" data-act="shop">Workshop<span class="badge">NEW</span></button></div>
+    ${out.brawl ? `<div class="grid3"><button class="btn primary" data-act="brawl">Brawl again</button><button class="btn" data-act="shop">Workshop<span class="badge">NEW</span></button><button class="btn" data-act="hub">Hub</button></div>` : `<div class="grid2"><button class="btn" data-act="hub">Hub</button><button class="btn primary" data-act="shop">Workshop<span class="badge">NEW</span></button></div>`}
   </div>`;
-    bind(el, { hub: () => renderHub(), shop: () => renderShop() });
+    bind(el, { hub: () => renderHub(), shop: () => renderShop(), brawl: () => renderBrawl() });
     show("result");
+    drawIcons(el);
+  }
+  function swRow(k, label, sub) {
+    const s = D().settings;
+    return `<div class="toggle" data-tog="${k}"><span class="tl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span><span class="switch ${s[k] ? "on" : ""}"></span></div>`;
   }
   function toggles() {
-    const s = D().settings;
-    return `<div class="toggle" data-tog="sound">Sound effects<span class="switch ${s.sound ? "on" : ""}"></span></div>
-    <div class="toggle" data-tog="haptics">Vibration<span class="switch ${s.haptics ? "on" : ""}"></span></div>`;
+    return swRow("sound", "Sound effects") + swRow("music", "Music") + swRow("haptics", "Vibration");
   }
   function bindToggles(root) {
     for (const t of $$("[data-tog]", root)) t.onclick = () => {
@@ -4511,31 +5312,103 @@
       const s = D().settings;
       s[k] = !s[k];
       save();
-      Sfx.enabled = s.sound;
-      t.lastElementChild.classList.toggle("on", s[k]);
+      applyAudioSettings();
+      syncMusic();
+      t.lastElementChild.classList.toggle("on", !!s[k]);
       click();
+      const r = $(`[data-range="${k === "sound" ? "sfxVol" : k === "music" ? "musicVol" : ""}"]`, root);
+      if (r) r.disabled = !s[k];
     };
+    for (const r of $$("[data-range]", root)) {
+      r.oninput = () => {
+        D().settings[r.dataset.range] = r.value / 100;
+        applyAudioSettings();
+        r.style.setProperty("--v", r.value + "%");
+      };
+      r.onchange = () => {
+        save();
+        click();
+      };
+    }
   }
   function openSettings() {
-    modal(`<h3>Settings</h3>${toggles()}
-    <p class="small muted">Version ${esc(UI.version)}. Updates download automatically in the background and apply between matches.</p>
-    <div class="acts">
-      <button class="btn" data-act="upd">Check for updates</button>
-      <button class="btn" data-act="credits">Credits &amp; licenses</button>
-      <button class="btn hot" data-act="reset">Reset progress</button>
-      <button class="btn primary" data-act="close">Close</button>
-    </div>`, (m) => {
+    const d = D(), s = d.settings, st = d.stats;
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const diffs = Object.entries(DIFFICULTY).map(([k, v]) => `<button class="seg ${s.difficulty === k ? "on" : ""}" data-act="diff" data-arg="${k}">${v.name}</button>`).join("");
+    const range = (k, on) => `<input class="range" type="range" min="0" max="100" value="${Math.round((s[k] ?? 0.5) * 100)}" style="--v:${Math.round((s[k] ?? 0.5) * 100)}%" data-range="${k}" aria-label="${k}" ${on ? "" : "disabled"}>`;
+    const stat = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+    modal(`<div class="settings">
+    <div class="row shead"><h3>Settings</h3><span class="spacer"></span><button class="icon-btn" data-act="close" aria-label="Close">&times;</button></div>
+    <section><h4>Gameplay</h4>
+      <div class="tl" style="margin-bottom:8px"><b>AI difficulty</b><small data-diffdesc>${esc(difficulty().desc)}</small></div>
+      <div class="segs">${diffs}</div>
+      ${swRow("shake", "Screen shake", "Camera kick on big hits")}
+      ${swRow("haptics", "Vibration", "Buzz when you take hits (supported phones)")}
+    </section>
+    <section><h4>Audio</h4>
+      <div class="audiorow">${swRow("sound", "Sound effects")}${range("sfxVol", s.sound)}</div>
+      <div class="audiorow">${swRow("music", "Music", "Relaxed synth soundtrack")}${range("musicVol", s.music)}</div>
+    </section>
+    <section><h4>Career</h4>
+      <div class="statgrid">${stat(`${st.wins}-${st.losses}`, "Record")}${stat(st.kos, "Knockouts")}${stat(st.pits, "Pit KOs")}${stat(d.brawl.best, "Best streak")}${stat(`${Object.keys(d.inv).length}/${PARTS.length}`, "Parts")}${stat(pilotLevel(), "Pilot Lv")}</div>
+    </section>
+    <section><h4>App</h4>
+      <div class="small muted" style="margin-bottom:8px">Version ${esc(UI.version)}. Updates download in the background and apply between matches.</div>
+      <div class="btnrow"><button class="btn small" data-act="upd">Check for updates</button>${!standalone && (UI.installPrompt || ios) ? '<button class="btn small" data-act="install">Install app</button>' : ""}<button class="btn small" data-act="credits">Credits &amp; licenses</button></div>
+    </section>
+    <details class="dev"><summary>Developer options</summary>
+      <div class="small muted" style="margin:6px 0 8px">Testing tools. These change your save file.</div>
+      <div class="btnrow"><button class="btn small" data-act="dev" data-arg="parts">Unlock all parts</button><button class="btn small" data-act="dev" data-arg="credits">+5,000 credits</button><button class="btn small" data-act="dev" data-arg="max">Max all levels</button><button class="btn small" data-act="dev" data-arg="league">Skip to next league</button></div>
+    </details>
+    <section class="danger"><button class="btn hot block" data-act="reset">Reset progress</button></section>
+  </div>`, (m) => {
+      m.firstElementChild.classList.add("wide");
       bindToggles(m);
       bind(m, {
         close: closeModal,
         credits: openCredits,
+        install: () => {
+          closeModal();
+          doInstall();
+        },
         upd: () => {
           if (UI.checkUpdate) UI.checkUpdate(true);
+        },
+        diff: (k) => {
+          s.difficulty = k;
+          save();
+          for (const b of $$(".seg", m)) b.classList.toggle("on", b.dataset.arg === k);
+          $("[data-diffdesc]", m).textContent = difficulty().desc;
+          refreshScreen();
+        },
+        dev: (k) => {
+          if (k === "parts") {
+            devGiveAll();
+            toast("All parts unlocked");
+          }
+          if (k === "credits") {
+            devCredits(5e3);
+            toast("+5,000 credits");
+          }
+          if (k === "max") {
+            devMaxAll();
+            toast(`Every owned part is now Lv ${MAX_LEVEL}`);
+          }
+          if (k === "league") {
+            devNextLeague();
+            toast(`Now in ${currentLeague().name}`);
+          }
+          play("upgrade");
+          refreshCredits();
+          refreshScreen();
         },
         reset: () => modal(`<h3>Reset progress?</h3><p>This erases your parts, credits and league progress. It can't be undone.</p><div class="acts"><button class="btn hot" data-act="yes">Erase everything</button><button class="btn" data-act="no">Cancel</button></div>`, (m2) => bind(m2, {
           yes: () => {
             reset();
+            applyAudioSettings();
             closeModal();
+            UI.attract = null;
             renderTitle();
             toast("Progress reset");
           },
@@ -4543,6 +5416,10 @@
         }))
       });
     });
+  }
+  function refreshScreen() {
+    const r = { title: renderTitle, hub: renderHub, brawl: renderBrawl, garage: renderGarage, shop: () => renderShop(false) }[UI.screen];
+    if (r) r();
   }
   function openCredits() {
     modal(`<h3>Credits</h3><div class="credits-list">
@@ -4560,7 +5437,15 @@
     UI.dpr = dpr;
   }
   function initUI() {
-    Sfx.enabled = D().settings.sound;
+    applyAudioSettings();
+    const wake = () => {
+      initAudio();
+      applyAudioSettings();
+      UI.audioOn = true;
+      syncMusic();
+    };
+    window.addEventListener("pointerdown", wake, { passive: true });
+    window.addEventListener("keydown", wake);
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
       UI.keys.add(k);

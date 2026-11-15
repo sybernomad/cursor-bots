@@ -50,24 +50,31 @@ Space/J, K, L for weapons, Shift to boost, Esc to pause.
 
 ## Game systems
 
-- **Frames** (8): set HP, weight capacity and slot layout (2–6 wheels, 1–3 weapons, 1–2 armor,
-  shield, 0–2 utility). Going over capacity slows the bot.
-- **Wheels** (7): power, grip, top speed, plus perks (treads resist knockback, mag-lev floats over
-  floor hazards, spiked rims hurt on contact).
-- **Weapons** (15): spinners (bar, drum, disc, vertical) that must spin up, hammers/axes,
-  flippers that launch bots (into pits!), saws, flamethrower with overheat, nail gun, homing
-  rockets, EMP stun, railgun.
-- **Armor** (8), **Shields** (4), **Utility** (7): damage reduction, thorns, reactive plating,
-  regenerating shields, repair drones, overclock, anchor magnet (pit save), crits and more.
-- **Rarity tiers**: Common, Rare, Epic, Legendary. **Levels 1–5**: buy duplicate cards for copies,
-  then spend copies + credits in the Garage (+12% stats per level).
+- **88 parts** across 6 types, each with Common/Rare/Epic/Legendary rarity:
+  - **Frames** (14): set HP, weight capacity and slot layout (2–6 wheels, 1–3 weapons, 1–3 armor,
+    shield, 0–3 utility). Going over capacity slows the bot.
+  - **Wheels** (12): power, grip, top speed, plus perks (treads resist knockback, hover wheels float
+    over floor hazards, bladed wheels hurt on contact).
+  - **Weapons** (26): spinners that must spin up, hammers/axes/crushers, flippers that launch bots
+    (into pits!), saws, flamethrowers that overheat, guns, homing rockets, stun weapons, beam weapons.
+  - **Armor** (13), **Shields** (8), **Utility** (15): damage reduction, thorns, reactive plating,
+    regenerating shields, repair, overclock, crits, pit-save magnet, and the Lucky Bolt (+credits).
+- **Levels 1–10**: buy duplicate cards for copies, then spend copies + credits in the Garage
+  (+12% stats per level; each level needs more copies and credits).
 - **Workshop**: a hand of 5 cards is dealt from a rarity-weighted deck after every match;
   rerolls cost more each time.
-- **Progression**: Rookie Cup → Scrapyard Circuit → Steel Coliseum → Inferno League → Titan
-  Championship, each ending with a named boss, then the endless Pro Circuit. Pilot XP levels
-  grant credit bonuses.
+- **Series**: Rookie Cup → Scrapyard Circuit → Steel Coliseum → Inferno League → Titan
+  Championship, each ending with a named boss, then the endless Pro Circuit (enemies keep scaling).
+- **Quick Brawl**: side fights for credits between series matches. Pick from three rivals
+  (Warm-up / Even / Tough) with different purses; win streaks pay up to +50% and winners can salvage
+  a free part. Brawls never change series progress.
+- **AI difficulty** (Settings): Easy / Normal / Hard / Brutal. Changes AI skill and enemy part
+  levels, with matching reward multipliers (x0.8 to x1.5). Takes effect from the next fight.
 - **Tutorial**: the first match teaches driving, beacons, boost and spinner timing against a
   dummy; coach marks then walk through the Workshop and Garage.
+- **Settings**: difficulty, screen shake, vibration, sound and music volume, career stats, update
+  check, credits, and **Developer options** for testing (unlock all parts, +5,000 credits, max levels,
+  skip league).
 
 Progress is saved in `localStorage`.
 

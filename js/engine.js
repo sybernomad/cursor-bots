@@ -827,7 +827,7 @@ export class Match {
     let cx = this.cam.x, cy = this.cam.y;
     cx = hw * 2 >= WORLD.w + 80 ? WORLD.w / 2 : clamp(cx, hw - 40, WORLD.w - hw + 40);
     cy = hh * 2 >= WORLD.h + 80 ? WORLD.h / 2 : clamp(cy, hh - 40, WORLD.h - hh + 40);
-    const sh = this.cam.shake;
+    const sh = this.cam.shake * (this.o.shake ?? 1);
     const sx = (Math.random() - 0.5) * sh, sy = (Math.random() - 0.5) * sh;
     ctx.fillStyle = '#05070b'; ctx.fillRect(0, 0, w, h);
     ctx.save();

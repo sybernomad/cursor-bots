@@ -3,7 +3,7 @@ import { PART, PARTS, RARITY, CATS, LEAGUES, PRO, ARENAS, TIPS, MAX_LEVEL, partS
 import { drawBot, drawPartIcon } from './render.js';
 import { Match, computeStats, powerRating, weaponStatus } from './engine.js';
 import * as SV from './save.js';
-import { play, setHum, vibrate, Sfx, initAudio } from './audio.js';
+import { play, setHum, vibrate, Sfx, initAudio, setMusic, applyVolumes } from './audio.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -13,8 +13,20 @@ const coin = '<i class="coin"></i>';
 
 export const UI = {
   screen: null, match: null, previews: [], input: { x: 0, y: 0, mag: 0, fire: [false, false, false], boost: false },
-  keys: new Set(), touchStick: false, installPrompt: null, version: '', paused: false,
+  keys: new Set(), touchStick: false, installPrompt: null, version: '', paused: false, fight: null, attract: null, audioOn: false,
 };
+const ICON = {
+  play: '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>',
+  brawl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 4l11 11M15 15l2.5-1M15 15l-1 2.5M20 4L9 15M9 15l-2.5-1M9 15l1 2.5M5 19l2.5-2.5M19 19l-2.5-2.5"/></svg>',
+  garage: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.4 2.4-2.6-.4-.4-2.6z"/></svg>',
+  shop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="6" width="10" height="14" rx="2" transform="rotate(-10 8 13)"/><rect x="10" y="4" width="10" height="14" rx="2" transform="rotate(8 15 11)" fill="rgba(0,0,0,.35)"/></svg>',
+};
+export function applyAudioSettings() {
+  const s = D().settings;
+  Sfx.enabled = s.sound; Sfx.vol = s.sfxVol ?? 0.8; Sfx.music = s.music; Sfx.musicVol = s.musicVol ?? 0.5;
+  applyVolumes();
+}
+function syncMusic() { if (UI.audioOn) setMusic(UI.screen === 'hud' ? 'battle' : 'menu'); }
 
 // --------------------------------------------------------------------------
 // Basics
@@ -24,7 +36,8 @@ function show(name) {
   UI.screen = name;
   UI.previews = UI.previews.filter((p) => document.body.contains(p.canvas) && p.canvas.closest('.screen.active, .sheet, .modal'));
   document.body.classList.toggle('in-match', name === 'hud');
-  hideCoach();
+  if (name === 'title') startAttract(); else stopAttract();
+  hideCoach(); syncMusic();
 }
 let toastT = 0;
 export function toast(msg, ms = 2200) {
@@ -104,7 +117,8 @@ function drawPreview(p, t) {
   g.clearRect(0, 0, w, h);
   let build, team = 'player';
   if (p.kind === 'player') build = D().build;
-  else if (p.kind === 'enemy') { const e = SV.nextEnemy(); build = e.build; team = e.team || 'enemy'; }
+  else if (p.kind === 'enemy') { const e = UI.fight ? UI.fight.enemy : SV.nextEnemy(); build = e.build; team = e.team || 'enemy'; }
+  else if (p.kind.startsWith('offer:')) { const o = (D().brawl.offers || [])[+p.kind.slice(6)]; if (!o) return; build = o.enemy.build; team = o.enemy.team || 'enemy'; }
   else return;
   const F = PART[build.frame];
   const r = Math.min(w, h) * 0.21 * (0.85 + 0.15 * F.size);
@@ -116,7 +130,46 @@ function drawPreview(p, t) {
   drawBot(g, botView(build, team, w / 2, h / 2, r, a, t));
 }
 export function menuFrame(t) {
+  if (UI.attract && UI.screen === 'title') {
+    const a = UI.attract;
+    const dt = a.t == null ? 1 / 60 : Math.min(0.05, Math.max(0, t - a.t)); a.t = t;
+    a.m.update(dt);
+    if (a.m.state === 'over') { a.endT += dt; if (a.endT > 2.2) { UI.attract = null; startAttract(); return; } }
+    const c = $('#cv'), g = c.getContext('2d'), dpr = UI.dpr || 1;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    a.m.draw(g, window.innerWidth, window.innerHeight);
+  }
   for (const p of UI.previews) if (p.canvas.isConnected && p.canvas.offsetParent !== null) drawPreview(p, t);
+}
+
+// Attract mode: a live AI-vs-AI fight plays behind the title menu.
+function startAttract() {
+  document.body.classList.add('attract');
+  if (UI.attract) return;
+  try {
+    const d = D(); const L = SV.currentLeague();
+    const r = SV.rng((Date.now() & 0xffffff) + 11);
+    const arenas = SV.unlockedArenas().filter((a) => ARENAS[a]);
+    const arena = arenas[Math.floor(r() * arenas.length)] || 'yard';
+    const p = Math.max(0.6, L.power + 0.6);
+    const foe = SV.genBot(r, p, { rarity: L.rarity });
+    const mine = d.tut.match ? { build: JSON.parse(JSON.stringify(d.build)), levels: SV.levelsMap() } : (() => { const b = SV.genBot(r, p, { rarity: L.rarity }); return { build: b.build, levels: b.levels }; })();
+    if (!mine.build.weapons.some(Boolean)) { const b = SV.genBot(r, p, { rarity: L.rarity }); mine.build = b.build; mine.levels = b.levels; }
+    const m = new Match({
+      arena, duration: 50, shake: 0.2,
+      player: { ...mine, ai: 0.72 },
+      enemy: { build: foe.build, levels: foe.levels, diff: 0.68, name: foe.name, team: foe.team },
+      onEvent: () => {},
+    });
+    m.start();
+    UI.attract = { m, t: null, endT: 0 };
+  } catch (e) { console.warn('attract failed', e); UI.attract = null; }
+}
+function stopAttract() {
+  document.body.classList.remove('attract');
+  if (!UI.attract) return;
+  UI.attract = null;
+  if (!UI.match) { const g = $('#cv').getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 99999, 99999); }
 }
 
 // --------------------------------------------------------------------------
@@ -124,25 +177,46 @@ export function menuFrame(t) {
 // --------------------------------------------------------------------------
 export function renderTitle() {
   const el = $('#scr-title');
+  const d = D();
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const canInstall = !standalone && (UI.installPrompt || ios);
+  const started = d.tut.match;
+  const L = SV.currentLeague();
+  const prog = started ? `${L.name} · ${L.pro ? `Pro wins ${d.proWins}` : `Match ${Math.min(d.match + 1, L.matches)} of ${L.matches}`}` : 'Learn to drive and fight in about a minute';
+  const brawlSub = !started ? 'Unlocks after training' : d.brawl.streak > 1 ? `Win streak x${d.brawl.streak}, keep it going!` : 'Random fights for credits and part drops';
   el.innerHTML = `
-    <div>
-      <canvas class="title-bot" data-preview="player"></canvas>
-      <div class="logo">Cursor<span>Bots</span></div>
-      <div class="tagline">Build. Upgrade. Destroy.</div>
-      <div class="title-actions">
-        <button class="btn primary big" data-act="play">${D().tut.match ? 'Continue' : 'Play'}</button>
-        ${!standalone && (UI.installPrompt || ios) ? `<button class="btn" data-act="install">Install App</button>` : ''}
+    <div class="title-wrap">
+      <div class="title-hero">
+        <div class="logo">Cursor<span>Bots</span></div>
+        <div class="tagline">Build. Upgrade. Destroy.</div>
+      </div>
+      ${started ? `<div class="title-stats">
+        <div><b>${SV.pilotLevel()}</b><span>Pilot Lv</span></div>
+        <div><b>${coin}${d.credits}</b><span>Credits</span></div>
+        <div><b>${Object.keys(d.inv).length}<small>/${PARTS.length}</small></b><span>Parts</span></div>
+        <div><b>${d.stats.wins}</b><span>Wins</span></div>
+      </div>` : ''}
+      <div class="menu">
+        <button class="mbtn primary" data-act="play"><span class="mi">${ICON.play}</span><span class="mt"><b>${started ? 'Continue Series' : 'Start Training'}</b><small>${esc(prog)}</small></span></button>
+        <button class="mbtn" data-act="brawl" ${started ? '' : 'disabled'}><span class="mi">${ICON.brawl}</span><span class="mt"><b>Quick Brawl</b><small>${esc(brawlSub)}</small></span></button>
         <div class="grid2">
-          <button class="btn ghost" data-act="settings">Settings</button>
-          <button class="btn ghost" data-act="credits">Credits</button>
+          <button class="mbtn sm" data-act="garage" ${started ? '' : 'disabled'}><span class="mi">${ICON.garage}</span><b>Garage</b></button>
+          <button class="mbtn sm" data-act="shop" ${started ? '' : 'disabled'}><span class="mi">${ICON.shop}</span><b>Workshop</b>${d.shop && d.shop.fresh ? '<span class="badge">NEW</span>' : ''}</button>
+        </div>
+        <div class="menu-foot">
+          <button class="btn ghost small" data-act="settings">Settings</button>
+          ${canInstall ? '<button class="btn ghost small" data-act="install">Install app</button>' : ''}
+          <button class="btn ghost small" data-act="credits">Credits</button>
         </div>
       </div>
     </div>
-    <div class="ver">v${esc(UI.version || '')}</div>`;
+    <div class="ver">v${esc(UI.version || '')} · ${esc(SV.difficulty().name)} AI</div>`;
   bind(el, {
     play: () => renderHub(),
+    brawl: () => renderBrawl(),
+    garage: () => renderGarage(),
+    shop: () => renderShop(),
     install: () => doInstall(),
     settings: () => openSettings(),
     credits: () => openCredits(),
@@ -221,15 +295,16 @@ export function renderHub() {
         <div class="xpbar"><i style="width:${xpPct}%"></i></div>
       </div>
     </div>
-    <div class="hub-actions">
-      <button class="btn ${boss ? 'gold' : 'primary'} big fight" data-act="fight">${tutorial ? 'Start Tutorial' : boss ? 'Boss Fight' : 'Fight'}</button>
+    <div class="hub-actions three">
+      <button class="btn ${boss ? 'gold' : 'primary'} big fight" data-act="fight">${tutorial ? 'Start Tutorial' : boss ? 'Boss Fight' : 'Series Fight'}</button>
+      <button class="btn" data-act="brawl" ${tutorial ? 'disabled' : ''}>Brawl${d.brawl.streak > 1 ? `<span class="badge">x${d.brawl.streak}</span>` : ''}</button>
       <button class="btn" data-act="garage" ${tutorial ? 'disabled' : ''}>Garage</button>
       <button class="btn" data-act="shop" ${tutorial ? 'disabled' : ''}>Workshop${shopFresh ? '<span class="badge">NEW</span>' : ''}</button>
     </div>
   </div>`;
   bind(el, {
     title: () => renderTitle(), settings: () => openSettings(),
-    fight: () => renderVS(), garage: () => renderGarage(), shop: () => renderShop(),
+    fight: () => renderVS(), garage: () => renderGarage(), shop: () => renderShop(), brawl: () => renderBrawl(),
   });
   show('hub'); registerPreviews(el);
 }
@@ -322,7 +397,7 @@ function openPicker(cat, slot) {
   sheet(`<div class="row" style="margin-bottom:10px"><h2>${CATS[cat]}${cat === 'wheel' ? ' (fills every wheel slot)' : ''}</h2><span class="spacer"></span><div class="pill">${coin}<span data-credits>${d.credits}</span></div><button class="icon-btn" data-act="close">&times;</button></div>
     ${canEmpty && current ? `<button class="btn small block ghost" style="margin-bottom:8px" data-act="empty">Unequip</button>` : ''}
     ${items || '<p class="muted">You don\'t own any parts of this type yet. Buy them in the Workshop.</p>'}
-    <p class="small muted">Buy duplicate cards in the Workshop to collect copies and level parts up (+12% stats per level, max Lv ${MAX_LEVEL}).</p>`, (s) => bind(s, {
+    <p class="small muted">Buy duplicate cards in the Workshop to collect copies and level parts up (+12% stats per level, max Lv ${MAX_LEVEL}). Higher levels need more copies and credits.</p>`, (s) => bind(s, {
     close: closeSheet,
     equip: (id) => { SV.equip(cat, slot, id); closeSheet(); renderGarage(); },
     empty: () => { SV.equip(cat, slot, null); closeSheet(); renderGarage(); },
@@ -395,24 +470,72 @@ function vibrateIf(ms) { if (D().settings.haptics) vibrate(ms); }
 // --------------------------------------------------------------------------
 // VS screen
 // --------------------------------------------------------------------------
-function renderVS() {
+function seriesFight() {
   const e = SV.nextEnemy(); const L = SV.currentLeague();
-  const ps = SV.playerStats(); const es = computeStats(e.build, (id) => e.levels[id] || 1);
-  const arenaId = e.tutorial ? 'tutorial' : L.arena;
+  return { mode: 'series', enemy: e, arena: e.tutorial ? 'tutorial' : L.arena };
+}
+function renderVS(fight) {
+  if (!fight || !fight.enemy) fight = seriesFight();
+  UI.fight = fight;
+  const e = fight.enemy; const Dm = SV.difficulty();
+  const adj = SV.adjustEnemy(e);
+  const ps = SV.playerStats(); const es = computeStats(e.build, (id) => adj.levels[id] || 1);
+  const arenaId = fight.arena;
   const haz = hazardList(ARENAS[arenaId]);
   const tip = e.tutorial ? 'This is a training match. Nothing can go wrong!' : TIPS[(D().stats.matches * 3 + 1) % TIPS.length];
+  const brawl = fight.mode === 'brawl';
   const el = $('#scr-vs');
   el.innerHTML = `<div style="width:100%"><div class="vs" style="margin:0 auto">
       <div class="side"><canvas data-preview="player" data-spin="0"></canvas><div class="bname" style="color:var(--accent)">You</div><div class="small muted">Power ${powerRating(ps)} · HP ${ps.hp}</div></div>
       <div class="vsx">VS</div>
-      <div class="side"><canvas data-preview="enemy" data-spin="0" data-mirror="1"></canvas><div class="bname" style="color:${e.boss ? 'var(--gold)' : 'var(--hot)'}">${esc(e.name)}</div><div class="small muted">${esc(e.title || '')} · Power ${powerRating(es)} · HP ${es.hp}</div></div>
+      <div class="side"><canvas data-preview="enemy" data-spin="0" data-mirror="1"></canvas><div class="bname" style="color:${e.team === 'boss' ? 'var(--gold)' : 'var(--hot)'}">${esc(e.name)}</div><div class="small muted">${esc(e.title || '')} · Power ${powerRating(es)} · HP ${es.hp}</div></div>
     </div>
-    <div class="chips"><span class="chip">${ARENAS[arenaId].name}</span>${haz.map((h) => `<span class="chip danger">${h}</span>`).join('')}</div>
+    <div class="chips">${brawl ? `<span class="chip gold">${coin} ${Math.round(fight.offer.reward * Dm.reward)} purse</span>` : ''}<span class="chip">${ARENAS[arenaId].name}</span>${!e.tutorial && Dm !== SV.DIFFICULTY.normal ? `<span class="chip">${Dm.name} AI</span>` : ''}${haz.map((h) => `<span class="chip danger">${h}</span>`).join('')}</div>
     <div class="tip">${esc(tip)}</div>
-    <div class="row" style="justify-content:center;margin-top:16px;gap:12px"><button class="btn ghost" data-act="back">Back</button><button class="btn ${e.boss ? 'gold' : 'hot'} big" data-act="go">${e.tutorial ? 'Begin' : 'Fight!'}</button></div>
+    <div class="row" style="justify-content:center;margin-top:16px;gap:12px"><button class="btn ghost" data-act="back">Back</button><button class="btn ${e.team === 'boss' ? 'gold' : 'hot'} big" data-act="go">${e.tutorial ? 'Begin' : 'Fight!'}</button></div>
   </div>`;
-  bind(el, { back: () => renderHub(), go: () => startMatch() });
+  bind(el, { back: () => { UI.fight = null; if (brawl) renderBrawl(); else renderHub(); }, go: () => startMatch() });
   show('vs'); registerPreviews(el);
+}
+
+// --------------------------------------------------------------------------
+// Quick Brawl
+// --------------------------------------------------------------------------
+const BRAWL_REROLL = 10;
+export function renderBrawl() {
+  const d = D(); const offers = SV.brawlOffers(); const Dm = SV.difficulty();
+  const pp = powerRating(SV.playerStats());
+  const cards = offers.map((o, i) => {
+    const T = SV.BRAWL_TIERS.find((t) => t.key === o.tier);
+    const adj = SV.adjustEnemy(o.enemy);
+    const es = computeStats(o.enemy.build, (id) => adj.levels[id] || 1);
+    const ep = powerRating(es); const rel = ep / Math.max(1, pp);
+    const relTxt = rel > 1.15 ? ['stronger', 'var(--hot)'] : rel < 0.88 ? ['weaker', 'var(--ok)'] : ['evenly matched', 'var(--muted)'];
+    return `<div class="bcard" style="--tc:${T.color}">
+      <div class="bhead"><span class="btier">${T.name}</span><span class="spacer"></span><span class="pill">${coin}${Math.round(o.reward * Dm.reward)}</span></div>
+      <canvas data-preview="offer:${i}" data-spin="0" data-mirror="1"></canvas>
+      <div class="bname">${esc(o.enemy.name)}</div>
+      <div class="small muted">Power ${ep} <span style="color:${relTxt[1]}">(${relTxt[0]})</span> · HP ${es.hp}</div>
+      <div class="chips left"><span class="chip">${ARENAS[o.arena].name}</span><span class="chip">${Math.round(T.drop * 100)}% part drop</span></div>
+      <button class="btn block ${o.tier === 'tough' ? 'hot' : o.tier === 'even' ? 'primary' : ''}" data-act="go" data-arg="${i}">Fight</button>
+    </div>`;
+  }).join('');
+  const el = $('#scr-brawl');
+  el.innerHTML = `<div class="wrap">
+    ${topbar('Quick Brawl', 'back')}
+    <div class="panel brawl-intro">
+      <div><b>Side fights for credits and parts.</b><div class="small muted">Brawls never affect your series. Win in a row for a streak bonus (up to +50%), and winners sometimes salvage a free part.</div></div>
+      <div class="streaks"><div class="streak"><b>${d.brawl.streak}</b><span>Streak</span></div><div class="streak"><b>${d.brawl.best}</b><span>Best</span></div><div class="streak"><b>${d.brawl.wins}</b><span>Won</span></div></div>
+    </div>
+    <div class="bcards">${cards}</div>
+    <div class="hub-actions"><button class="btn" data-act="reroll" ${d.credits < BRAWL_REROLL ? 'disabled' : ''}>New rivals &middot; ${coin} ${BRAWL_REROLL}</button><button class="btn" data-act="garage">Garage</button></div>
+  </div>`;
+  bind(el, {
+    back: () => renderHub(), settings: () => openSettings(), garage: () => renderGarage(),
+    reroll: () => { if (d.credits < BRAWL_REROLL) { play('error'); return; } d.credits -= BRAWL_REROLL; SV.rerollBrawl(); play('deal'); renderBrawl(); },
+    go: (i) => { const o = offers[+i]; renderVS({ mode: 'brawl', enemy: o.enemy, arena: o.arena, offer: o }); },
+  });
+  show('brawl'); registerPreviews(el);
 }
 
 // --------------------------------------------------------------------------
@@ -420,14 +543,15 @@ function renderVS() {
 // --------------------------------------------------------------------------
 function startMatch() {
   initAudio();
-  const d = D(); const e = SV.nextEnemy(); const L = SV.currentLeague();
-  const arena = e.tutorial ? 'tutorial' : L.arena;
+  const d = D(); if (!UI.fight) UI.fight = seriesFight();
+  const e = UI.fight.enemy; const arena = UI.fight.arena;
+  const adj = SV.adjustEnemy(e);
   UI.input = { x: 0, y: 0, mag: 0, fire: [false, false, false], boost: false };
   const m = new Match({
     arena, tutorial: !!e.tutorial,
     player: { build: JSON.parse(JSON.stringify(d.build)), levels: SV.levelsMap() },
-    enemy: { build: e.build, levels: e.levels, diff: e.diff, name: e.name, dummy: e.dummy, team: e.team },
-    onEvent: onMatchEvent,
+    enemy: { build: e.build, levels: adj.levels, diff: adj.diff, name: e.name, dummy: e.dummy, team: e.team },
+    onEvent: onMatchEvent, shake: d.settings.shake === false ? 0 : 1,
   });
   UI.match = m; UI.paused = false;
   buildHud(m);
@@ -585,9 +709,10 @@ export function matchFrame(dt, ctx, w, h) {
 function endMatch(res) {
   setHum(0);
   const m = UI.match; UI.match = null; UI.hud = null;
-  const enemy = SV.nextEnemy();
+  const f = UI.fight || seriesFight(); UI.fight = null;
+  const enemy = f.enemy;
   const L = SV.currentLeague();
-  const out = SV.applyResult(res);
+  const out = SV.applyResult(res, f.mode, f.offer);
   renderResult(res, out, enemy, L);
   const g = $('#cv').getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 99999, 99999);
   if (UI.onMatchEnd) UI.onMatchEnd();
@@ -604,52 +729,105 @@ function renderResult(res, out, enemy, L) {
     <div class="big ${res.win ? 'win' : 'lose'}">${res.tutorial ? 'Trained!' : res.win ? 'Victory' : 'Defeat'}</div>
     <div class="muted">${res.tutorial ? 'You\'re ready for the arena.' : `${how} vs <b>${esc(enemy.name)}</b>`}</div>
     ${out.leagueUp ? `<div class="announce">&#127942; ${esc(L.name)} cleared! Unlocked: ${esc(out.leagueUp)}</div>` : ''}
+    ${out.drop ? `<div class="announce drop r-${PART[out.drop].rarity}"><canvas data-icon="${out.drop}"></canvas><span>Salvaged a part!<br><b>${esc(PART[out.drop].name)}</b> <span class="rtag">${RARITY[PART[out.drop].rarity].name}</span></span></div>` : ''}
     ${out.levelUp ? `<div class="announce" style="border-color:var(--accent);color:var(--accent);background:rgba(63,240,255,.08)">Pilot level ${out.levelUp.level}!</div>` : ''}
     <div class="rlines">
       ${res.tutorial ? '' : `<div class="rline"><span class="muted">Damage dealt / taken</span><span>${res.dmgDealt} / ${res.dmgTaken ?? '-'}</span></div>`}
-      ${out.lines.map((l, i) => `<div class="rline" style="animation-delay:${0.15 + i * 0.12}s"><span>${esc(l[0])}</span><span>${coin} +${l[1]}</span></div>`).join('')}
+      ${out.lines.map((l, i) => `<div class="rline" style="animation-delay:${0.15 + i * 0.12}s"><span>${esc(l[0])}</span><span>${coin} ${l[1] < 0 ? '&minus;' : '+'}${Math.abs(l[1])}</span></div>`).join('')}
       ${out.levelUp ? `<div class="rline"><span>Level-up bonus</span><span>${coin} +${out.levelUp.bonus}</span></div>` : ''}
       <div class="rline total" style="animation-delay:${0.2 + out.lines.length * 0.12}s"><span>Total</span><span>${coin} +${total}</span></div>
       <div class="rline"><span class="muted">Pilot XP</span><span>+${out.xp}</span></div>
     </div>
-    <div class="grid2"><button class="btn" data-act="hub">Hub</button><button class="btn primary" data-act="shop">Workshop<span class="badge">NEW</span></button></div>
+    ${out.brawl
+      ? `<div class="grid3"><button class="btn primary" data-act="brawl">Brawl again</button><button class="btn" data-act="shop">Workshop<span class="badge">NEW</span></button><button class="btn" data-act="hub">Hub</button></div>`
+      : `<div class="grid2"><button class="btn" data-act="hub">Hub</button><button class="btn primary" data-act="shop">Workshop<span class="badge">NEW</span></button></div>`}
   </div>`;
-  bind(el, { hub: () => renderHub(), shop: () => renderShop() });
-  show('result');
+  bind(el, { hub: () => renderHub(), shop: () => renderShop(), brawl: () => renderBrawl() });
+  show('result'); drawIcons(el);
 }
 
 // --------------------------------------------------------------------------
 // Settings & credits
 // --------------------------------------------------------------------------
-function toggles() {
+function swRow(k, label, sub) {
   const s = D().settings;
-  return `<div class="toggle" data-tog="sound">Sound effects<span class="switch ${s.sound ? 'on' : ''}"></span></div>
-    <div class="toggle" data-tog="haptics">Vibration<span class="switch ${s.haptics ? 'on' : ''}"></span></div>`;
+  return `<div class="toggle" data-tog="${k}"><span class="tl"><b>${label}</b>${sub ? `<small>${sub}</small>` : ''}</span><span class="switch ${s[k] ? 'on' : ''}"></span></div>`;
+}
+function toggles() {
+  return swRow('sound', 'Sound effects') + swRow('music', 'Music') + swRow('haptics', 'Vibration');
 }
 function bindToggles(root) {
   for (const t of $$('[data-tog]', root)) t.onclick = () => {
     const k = t.dataset.tog; const s = D().settings; s[k] = !s[k]; SV.save();
-    Sfx.enabled = s.sound; t.lastElementChild.classList.toggle('on', s[k]); click();
+    applyAudioSettings(); syncMusic();
+    t.lastElementChild.classList.toggle('on', !!s[k]); click();
+    const r = $(`[data-range="${k === 'sound' ? 'sfxVol' : k === 'music' ? 'musicVol' : ''}"]`, root); if (r) r.disabled = !s[k];
   };
+  for (const r of $$('[data-range]', root)) {
+    r.oninput = () => { D().settings[r.dataset.range] = r.value / 100; applyAudioSettings(); r.style.setProperty('--v', r.value + '%'); };
+    r.onchange = () => { SV.save(); click(); };
+  }
 }
 export function openSettings() {
-  modal(`<h3>Settings</h3>${toggles()}
-    <p class="small muted">Version ${esc(UI.version)}. Updates download automatically in the background and apply between matches.</p>
-    <div class="acts">
-      <button class="btn" data-act="upd">Check for updates</button>
-      <button class="btn" data-act="credits">Credits &amp; licenses</button>
-      <button class="btn hot" data-act="reset">Reset progress</button>
-      <button class="btn primary" data-act="close">Close</button>
-    </div>`, (m) => {
+  const d = D(), s = d.settings, st = d.stats;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const diffs = Object.entries(SV.DIFFICULTY).map(([k, v]) => `<button class="seg ${s.difficulty === k ? 'on' : ''}" data-act="diff" data-arg="${k}">${v.name}</button>`).join('');
+  const range = (k, on) => `<input class="range" type="range" min="0" max="100" value="${Math.round((s[k] ?? 0.5) * 100)}" style="--v:${Math.round((s[k] ?? 0.5) * 100)}%" data-range="${k}" aria-label="${k}" ${on ? '' : 'disabled'}>`;
+  const stat = (v, l) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+  modal(`<div class="settings">
+    <div class="row shead"><h3>Settings</h3><span class="spacer"></span><button class="icon-btn" data-act="close" aria-label="Close">&times;</button></div>
+    <section><h4>Gameplay</h4>
+      <div class="tl" style="margin-bottom:8px"><b>AI difficulty</b><small data-diffdesc>${esc(SV.difficulty().desc)}</small></div>
+      <div class="segs">${diffs}</div>
+      ${swRow('shake', 'Screen shake', 'Camera kick on big hits')}
+      ${swRow('haptics', 'Vibration', 'Buzz when you take hits (supported phones)')}
+    </section>
+    <section><h4>Audio</h4>
+      <div class="audiorow">${swRow('sound', 'Sound effects')}${range('sfxVol', s.sound)}</div>
+      <div class="audiorow">${swRow('music', 'Music', 'Relaxed synth soundtrack')}${range('musicVol', s.music)}</div>
+    </section>
+    <section><h4>Career</h4>
+      <div class="statgrid">${stat(`${st.wins}-${st.losses}`, 'Record')}${stat(st.kos, 'Knockouts')}${stat(st.pits, 'Pit KOs')}${stat(d.brawl.best, 'Best streak')}${stat(`${Object.keys(d.inv).length}/${PARTS.length}`, 'Parts')}${stat(SV.pilotLevel(), 'Pilot Lv')}</div>
+    </section>
+    <section><h4>App</h4>
+      <div class="small muted" style="margin-bottom:8px">Version ${esc(UI.version)}. Updates download in the background and apply between matches.</div>
+      <div class="btnrow"><button class="btn small" data-act="upd">Check for updates</button>${!standalone && (UI.installPrompt || ios) ? '<button class="btn small" data-act="install">Install app</button>' : ''}<button class="btn small" data-act="credits">Credits &amp; licenses</button></div>
+    </section>
+    <details class="dev"><summary>Developer options</summary>
+      <div class="small muted" style="margin:6px 0 8px">Testing tools. These change your save file.</div>
+      <div class="btnrow"><button class="btn small" data-act="dev" data-arg="parts">Unlock all parts</button><button class="btn small" data-act="dev" data-arg="credits">+5,000 credits</button><button class="btn small" data-act="dev" data-arg="max">Max all levels</button><button class="btn small" data-act="dev" data-arg="league">Skip to next league</button></div>
+    </details>
+    <section class="danger"><button class="btn hot block" data-act="reset">Reset progress</button></section>
+  </div>`, (m) => {
+    m.firstElementChild.classList.add('wide');
     bindToggles(m);
     bind(m, {
-      close: closeModal, credits: openCredits,
+      close: closeModal, credits: openCredits, install: () => { closeModal(); doInstall(); },
       upd: () => { if (UI.checkUpdate) UI.checkUpdate(true); },
+      diff: (k) => {
+        s.difficulty = k; SV.save();
+        for (const b of $$('.seg', m)) b.classList.toggle('on', b.dataset.arg === k);
+        $('[data-diffdesc]', m).textContent = SV.difficulty().desc;
+        refreshScreen();
+      },
+      dev: (k) => {
+        if (k === 'parts') { SV.devGiveAll(); toast('All parts unlocked'); }
+        if (k === 'credits') { SV.devCredits(5000); toast('+5,000 credits'); }
+        if (k === 'max') { SV.devMaxAll(); toast(`Every owned part is now Lv ${MAX_LEVEL}`); }
+        if (k === 'league') { SV.devNextLeague(); toast(`Now in ${SV.currentLeague().name}`); }
+        play('upgrade'); refreshCredits(); refreshScreen();
+      },
       reset: () => modal(`<h3>Reset progress?</h3><p>This erases your parts, credits and league progress. It can't be undone.</p><div class="acts"><button class="btn hot" data-act="yes">Erase everything</button><button class="btn" data-act="no">Cancel</button></div>`, (m2) => bind(m2, {
-        yes: () => { SV.reset(); closeModal(); renderTitle(); toast('Progress reset'); }, no: openSettings,
+        yes: () => { SV.reset(); applyAudioSettings(); closeModal(); UI.attract = null; renderTitle(); toast('Progress reset'); }, no: openSettings,
       })),
     });
   });
+}
+// re-render the screen under the settings modal so changes show immediately
+function refreshScreen() {
+  const r = { title: renderTitle, hub: renderHub, brawl: renderBrawl, garage: renderGarage, shop: () => renderShop(false) }[UI.screen];
+  if (r) r();
 }
 export function openCredits() {
   modal(`<h3>Credits</h3><div class="credits-list">
@@ -670,7 +848,10 @@ export function resizeCanvas() {
 }
 
 export function initUI() {
-  Sfx.enabled = D().settings.sound;
+  applyAudioSettings();
+  const wake = () => { initAudio(); applyAudioSettings(); UI.audioOn = true; syncMusic(); };
+  window.addEventListener('pointerdown', wake, { passive: true });
+  window.addEventListener('keydown', wake);
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase(); UI.keys.add(k);
     if (UI.screen === 'hud' && [' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();

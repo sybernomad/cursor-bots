@@ -1,16 +1,27 @@
 // Cursor Bots — tiny WebAudio synth. All sounds are generated at runtime (no audio files).
-let ac = null, master = null, noiseBuf = null, hum = null;
-export const Sfx = { enabled: true };
+let ac = null, master = null, sfxBus = null, musicBus = null, noiseBuf = null, hum = null;
+export const Sfx = { enabled: true, vol: 0.8, music: true, musicVol: 0.5 };
 const last = {};
 
 export function initAudio() {
   if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
   try {
     ac = new (window.AudioContext || window.webkitAudioContext)();
-    master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
+    const out = ac.createGain(); out.gain.value = 0.9; out.connect(ac.destination);
+    sfxBus = ac.createGain(); sfxBus.connect(out);
+    musicBus = ac.createGain(); musicBus.connect(out);
+    master = sfxBus;
+    applyVolumes();
     noiseBuf = ac.createBuffer(1, ac.sampleRate * 1, ac.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   } catch (e) { ac = null; }
+}
+
+export function applyVolumes() {
+  if (!ac) return;
+  const t = ac.currentTime;
+  sfxBus.gain.setTargetAtTime(Sfx.enabled ? 0.55 * Sfx.vol : 0, t, 0.05);
+  musicBus.gain.setTargetAtTime(Sfx.music ? 0.32 * Sfx.musicVol : 0, t, 0.3);
 }
 
 function env(g, t, a, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dcy); }
@@ -83,3 +94,65 @@ export function setHum(level) {
 }
 
 export function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ignore */ } }
+
+// ---------------------------------------------------------------------------
+// Generative music: soft pad chords + a gentle arpeggio, all synthesized.
+// mode 'menu' = slow and relaxed, 'battle' = adds a pulsing bass and hats.
+// ---------------------------------------------------------------------------
+const CHORDS = [ // semitones from A2 (110 Hz)
+  [0, 7, 12, 15, 19],  // Am9-ish
+  [-4, 3, 8, 12, 15],  // Fmaj7
+  [3, 10, 15, 19, 22], // Cmaj7
+  [-2, 5, 10, 14, 17], // G6
+];
+const hz = (st) => 110 * Math.pow(2, st / 12);
+const Music = { mode: null, timer: null, step: 0, next: 0, verb: null };
+function musicVerb() {
+  if (Music.verb) return Music.verb;
+  const len = ac.sampleRate * 2.6; const ir = ac.createBuffer(2, len, ac.sampleRate);
+  for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4); }
+  const cv = ac.createConvolver(); cv.buffer = ir;
+  const wet = ac.createGain(); wet.gain.value = 0.55; cv.connect(wet); wet.connect(musicBus);
+  Music.verb = cv; return cv;
+}
+function mNote(type, f, t, dur, vol, cutoff = 1800, verb = true) {
+  const o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter();
+  o.type = type; o.frequency.value = f; fl.type = 'lowpass'; fl.frequency.value = cutoff;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.6, dur * 0.3));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(fl); fl.connect(g); g.connect(musicBus); if (verb) g.connect(musicVerb());
+  o.start(t); o.stop(t + dur + 0.1);
+}
+function mHat(t, vol) {
+  const s = ac.createBufferSource(); s.buffer = noiseBuf; const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000;
+  const g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  s.connect(f); f.connect(g); g.connect(musicBus); s.start(t, Math.random() * 0.5); s.stop(t + 0.08);
+}
+function schedule() {
+  if (!ac || !Music.mode) return;
+  const battle = Music.mode === 'battle';
+  const beat = battle ? 0.25 : 0.42; // seconds per eighth
+  while (Music.next < ac.currentTime + 0.4) {
+    const t = Music.next, st = Music.step;
+    const chord = CHORDS[Math.floor(st / 16) % CHORDS.length];
+    if (st % 16 === 0) for (const n of chord.slice(0, 4)) { mNote('sine', hz(n), t, beat * 17, 0.05); mNote('triangle', hz(n) * 1.003, t, beat * 17, 0.025, 900); }
+    const arp = [0, 2, 1, 3, 4, 2, 3, 1];
+    if (battle || st % 2 === 0) mNote('triangle', hz(chord[arp[st % 8]] + 12), t, beat * 2.2, battle ? 0.035 : 0.045, 2600);
+    if (battle) {
+      if (st % 2 === 0) mNote('sawtooth', hz(chord[0] - 12), t, beat * 0.9, 0.05, 420, false);
+      if (st % 2 === 1) mHat(t, 0.025);
+      if (st % 8 === 4) mHat(t, 0.045);
+    }
+    Music.step++; Music.next += beat;
+  }
+}
+export function setMusic(mode) {
+  if (!ac) return;
+  if (mode === Music.mode) return;
+  Music.mode = mode;
+  clearInterval(Music.timer); Music.timer = null;
+  if (!mode) return;
+  Music.next = Math.max(Music.next, ac.currentTime + 0.1);
+  Music.step = Math.floor(Music.step / 16) * 16;
+  Music.timer = setInterval(schedule, 120); schedule();
+}
